@@ -1,0 +1,18 @@
+# Node modules
+node_modules/
+dist/
+.vite/
+.vscode/
+.DS_Store
+
+# Python related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Docker
+*.log
+docker-compose.override.yml
+db-data/
