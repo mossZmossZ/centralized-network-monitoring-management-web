@@ -1,13 +1,17 @@
+import { Link } from "react-router-dom";
+
 export default function Main() {
     return (
       <main className="flex flex-col items-center justify-center flex-grow p-6">
         {/* Hero Section */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold">Welcome to ACME Industries</h1>
+          <h1 className="text-4xl font-bold">Welcome to Centralize Network Monitoring</h1>
           <p className="mt-2 text-lg text-gray-600">
-            We provide top-notch solutions for your business needs.
+            We provide Monitoring Infrastructure related with ISO 27001 , TIA-942 standard.
           </p>
-          <button className="btn btn-primary mt-4">Get Started</button>
+          <button className="btn btn-primary mt-4">
+            <Link to="/login">Get Started</Link>
+            </button>
         </div>
   
         {/* Cards Section */}
@@ -25,6 +29,10 @@ export default function Main() {
             <p className="text-gray-500">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
           </div>
         </div>
+
+        <button className="btn btn-primary mt-4">
+            <Link to="/docs">Document</Link>
+            </button>
       </main>
     );
   }
