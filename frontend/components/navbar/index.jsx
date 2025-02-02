@@ -14,6 +14,14 @@ export default function Navbar() {
           <li><Link to="/setting">Setting</Link></li>
           <li>
             <details>
+              <summary>Feature</summary>
+              <ul className="bg-base-100 rounded-t-none p-2">
+                <li><Link to="/docs">Password leak</Link></li>
+              </ul>
+            </details>
+          </li>
+          <li>
+            <details>
               <summary>Menu</summary>
               <ul className="bg-base-100 rounded-t-none p-2">
                 <li><Link to="/user">User</Link></li>
