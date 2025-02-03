@@ -1,21 +1,48 @@
-import { useState, useEffect } from "react";
-import { Button, Modal } from "daisyui"; // DaisyUI components (Ensure Tailwind & DaisyUI are set up)
+import { useState, useEffect } from "react"; 
 import { motion } from "framer-motion";
 import { Globe, Play, Pause, RefreshCw, FileText } from "lucide-react"; // Import icons
 
 const services = {
   Services: [
-    { name: "Docker Server", pingUrl: import.meta.env.VITE_DOCKER_SERVER_PING, webUrl: import.meta.env.VITE_DOCKER_SERVER_WEB },
-    { name: "Zabbix", pingUrl: import.meta.env.VITE_ZABBIX_PING, webUrl: import.meta.env.VITE_ZABBIX_WEB },
-    { name: "Prometheus", pingUrl: import.meta.env.VITE_PROMETHEUS_PING, webUrl: import.meta.env.VITE_PROMETHEUS_WEB },
+    { 
+      name: "Docker Server", 
+      pingUrl: import.meta.env.VITE_DOCKER_SERVER_PING, 
+      webUrl: import.meta.env.VITE_DOCKER_SERVER_WEB 
+    },
+    { 
+      name: "Zabbix", 
+      pingUrl: import.meta.env.VITE_ZABBIX_PING, 
+      webUrl: import.meta.env.VITE_ZABBIX_WEB 
+    },
+    { 
+      name: "Prometheus", 
+      pingUrl: import.meta.env.VITE_PROMETHEUS_PING, 
+      webUrl: import.meta.env.VITE_PROMETHEUS_WEB 
+    },
   ],
   Logging: [
-    { name: "Fluentd", pingUrl: import.meta.env.VITE_FLUENTD_PING, webUrl: import.meta.env.VITE_FLUENTD_WEB },
-    { name: "OpenSearch", pingUrl: import.meta.env.VITE_OPENSEARCH_PING, webUrl: import.meta.env.VITE_OPENSEARCH_WEB },
+    { 
+      name: "Fluentd", 
+      pingUrl: import.meta.env.VITE_FLUENTD_PING, 
+      webUrl: import.meta.env.VITE_FLUENTD_WEB 
+    },
+    { 
+      name: "OpenSearch", 
+      pingUrl: import.meta.env.VITE_OPENSEARCH_PING, 
+      webUrl: import.meta.env.VITE_OPENSEARCH_WEB 
+    },
   ],
   Dashboard: [
-    { name: "Grafana", pingUrl: import.meta.env.VITE_GRAFANA_PING, webUrl: import.meta.env.VITE_GRAFANA_WEB },
-    { name: "Uptime Kuma", pingUrl: import.meta.env.VITE_UPTIMEKUMA_PING, webUrl: import.meta.env.VITE_UPTIMEKUMA_WEB },
+    { 
+      name: "Grafana", 
+      pingUrl: import.meta.env.VITE_GRAFANA_PING, 
+      webUrl: import.meta.env.VITE_GRAFANA_WEB 
+    },
+    { 
+      name: "Uptime Kuma", 
+      pingUrl: import.meta.env.VITE_UPTIMEKUMA_PING, 
+      webUrl: import.meta.env.VITE_UPTIMEKUMA_WEB 
+    },
   ],
 };
 
@@ -26,6 +53,19 @@ export function Systems() {
   const [logs, setLogs] = useState("");
 
   useEffect(() => {
+    console.log("🔍 Environment Variables Loaded:");
+    console.log("Docker Ping:", import.meta.env.VITE_DOCKER_SERVER_PING);
+    console.log("Docker Web:", import.meta.env.VITE_DOCKER_SERVER_WEB);
+    console.log("Zabbix Ping:", import.meta.env.VITE_ZABBIX_PING);
+    console.log("Zabbix Web:", import.meta.env.VITE_ZABBIX_WEB);
+    console.log("Prometheus Ping:", import.meta.env.VITE_PROMETHEUS_PING);
+    console.log("Prometheus Web:", import.meta.env.VITE_PROMETHEUS_WEB);
+    console.log("OpenSearch Ping:", import.meta.env.VITE_OPENSEARCH_PING);
+    console.log("OpenSearch Web:", import.meta.env.VITE_OPENSEARCH_WEB);
+    console.log("Grafana Ping:", import.meta.env.VITE_GRAFANA_PING);
+    console.log("Grafana Web:", import.meta.env.VITE_GRAFANA_WEB);
+    console.log("Uptime Kuma Ping:", import.meta.env.VITE_UPTIMEKUMA_PING);
+    console.log("Uptime Kuma Web:", import.meta.env.VITE_UPTIMEKUMA_WEB);
     const fetchStatuses = async () => {
       const categoryResults = {};
 
