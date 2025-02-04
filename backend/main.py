@@ -24,7 +24,14 @@ app.add_middleware(
 )
 
 # ✅ Connect to Docker
-client = docker.from_env()
+try:
+    client = docker.from_env()
+    # Test Docker connection
+    client.ping()
+    print("✅ Docker is running")
+except Exception as e:
+    client = None  # Disable Docker operations if not running
+    print(f"❌ Docker is NOT running: {e}")
 
 
 # ✅ Service list (Only Ping URLs)
@@ -112,12 +119,22 @@ async def startup_event():
 
 
 # =======================
-# ✅ Docker Management APIs
+# ✅ Docker Initialization
 # =======================
+
+
+@app.get("/docker/status")
+def check_docker_status():
+    """Check if Docker is running"""
+    return {"docker_running": client is not None}
+
 
 @app.get("/containers")
 def list_containers():
     """List all containers (running and stopped)"""
+    if client is None:
+        raise HTTPException(status_code=503, detail="Docker is not running")
+
     try:
         containers = client.containers.list(all=True)
         return [{"id": c.id, "name": c.name, "status": c.status} for c in containers]
@@ -128,6 +145,9 @@ def list_containers():
 @app.post("/containers/run")
 def run_container(image: str, name: str = None, command: str = None):
     """Run a new Docker container"""
+    if client is None:
+        raise HTTPException(status_code=503, detail="Docker is not running")
+
     try:
         container = client.containers.run(image, name=name, command=command, detach=True)
         return {"message": f"Container {container.id} started", "id": container.id}
@@ -138,6 +158,9 @@ def run_container(image: str, name: str = None, command: str = None):
 @app.post("/containers/stop/{container_id}")
 def stop_container(container_id: str):
     """Stop a running container"""
+    if client is None:
+        raise HTTPException(status_code=503, detail="Docker is not running")
+
     try:
         container = client.containers.get(container_id)
         container.stop()
@@ -149,6 +172,9 @@ def stop_container(container_id: str):
 @app.post("/containers/restart/{container_id}")
 def restart_container(container_id: str):
     """Restart a container"""
+    if client is None:
+        raise HTTPException(status_code=503, detail="Docker is not running")
+
     try:
         container = client.containers.get(container_id)
         container.restart()
@@ -160,6 +186,9 @@ def restart_container(container_id: str):
 @app.get("/containers/logs/{container_id}")
 def get_logs(container_id: str):
     """Fetch logs of a container"""
+    if client is None:
+        raise HTTPException(status_code=503, detail="Docker is not running")
+
     try:
         container = client.containers.get(container_id)
         logs = container.logs(tail=100).decode("utf-8")
@@ -171,6 +200,9 @@ def get_logs(container_id: str):
 @app.get("/containers/logs/stream/{container_id}")
 async def stream_logs(container_id: str):
     """Stream container logs in real-time"""
+    if client is None:
+        raise HTTPException(status_code=503, detail="Docker is not running")
+
     try:
         container = client.containers.get(container_id)
 
@@ -187,6 +219,9 @@ async def stream_logs(container_id: str):
 @app.get("/containers/status/{container_id}")
 def container_status(container_id: str):
     """Check if a container is running"""
+    if client is None:
+        raise HTTPException(status_code=503, detail="Docker is not running")
+
     try:
         container = client.containers.get(container_id)
         return {"id": container.id, "name": container.name, "status": container.status}
