@@ -10,7 +10,7 @@ export default function Navbar() {
         <ul className="menu menu-horizontal px-1">
           <li><Link to="/report">Report</Link></li>
           <li><Link to="/alert">Alert</Link></li>
-          <li><Link to="/systems">Systems</Link></li>
+          <li><Link to="/systems">System</Link></li>
           <li><Link to="/setting">Setting</Link></li>
           <li>
             <details>
