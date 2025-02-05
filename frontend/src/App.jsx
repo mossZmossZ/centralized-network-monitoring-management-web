@@ -8,7 +8,7 @@ import { Alert } from "../components/alert/index.jsx";
 import { Systems } from "../components/systems/index.jsx";
 import { Setting } from "../components/settings/index.jsx";
 import { User } from "../components/user/index.jsx";
-import { Docs } from "../components/docs/index.jsx";
+import DocsIndex from "../components/docs/DocsIndex.jsx";
 import { Login } from "../components/login/index.jsx";
 
 export default function App() {
@@ -25,7 +25,7 @@ export default function App() {
             <Route path="/systems" element={<Systems />} />
             <Route path="/setting" element={<Setting />} />
             <Route path="/user" element={<User />} />
-            <Route path="/docs" element={<Docs />} />
+            <Route path="/docs" element={<DocsIndex />} />
             <Route path="/login" element={<Login />} />
           </Routes>
         </div>

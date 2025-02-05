@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 export default function Sidebar({ topics, activeTopic, setActiveTopic }) {
@@ -12,9 +13,7 @@ export default function Sidebar({ topics, activeTopic, setActiveTopic }) {
           <li key={topic.id}>
             <button
               className="w-full text-left px-4 py-2 font-medium text-gray-800 hover:bg-gray-200 flex justify-between items-center"
-              onClick={() =>
-                setExpandedTopics({ ...expandedTopics, [topic.id]: !expandedTopics[topic.id] })
-              }
+              onClick={() => setExpandedTopics((prev) => ({ ...prev, [topic.id]: !prev[topic.id] }))}
             >
               {topic.title}
               {expandedTopics[topic.id] ? <ChevronDownIcon className="h-5 w-5" /> : <ChevronRightIcon className="h-5 w-5" />}
@@ -25,9 +24,12 @@ export default function Sidebar({ topics, activeTopic, setActiveTopic }) {
                 <button
                   key={sub.id}
                   className={`w-full text-left pl-6 py-2 rounded-md ${
-                    activeTopic.id === sub.id ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-200"
+                    activeTopic?.id === sub.id ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-200"
                   }`}
-                  onClick={() => setActiveTopic(sub)}
+                  onClick={() => {
+                    console.log("Switching to topic:", sub.title);
+                    setActiveTopic(sub);
+                  }}
                 >
                   {sub.title}
                 </button>
@@ -38,3 +40,10 @@ export default function Sidebar({ topics, activeTopic, setActiveTopic }) {
     </aside>
   );
 }
+
+// ✅ Prop Type Validation
+Sidebar.propTypes = {
+  topics: PropTypes.array.isRequired,
+  activeTopic: PropTypes.object,
+  setActiveTopic: PropTypes.func.isRequired,
+};
