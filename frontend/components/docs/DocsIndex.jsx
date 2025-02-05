@@ -4,8 +4,10 @@ import Content from "./Content";
 import Introduction from "./topics/Introduction";
 import SetupGuide from "./topics/SetupGuide";
 import APIIntegration from "./topics/APIIntegration";
+import APIIntegration2 from "./topics/APIIntegration-2";
 
-const topics = [Introduction, SetupGuide, APIIntegration];
+
+const topics = [Introduction, SetupGuide, APIIntegration, APIIntegration2];
 
 export default function DocsIndex() {
   // ✅ Immediately set the first available topic
