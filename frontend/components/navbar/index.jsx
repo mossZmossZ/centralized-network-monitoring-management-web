@@ -5,15 +5,20 @@ export default function Navbar() {
   const featureRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Function to close all dropdowns when clicking outside
+  // Function to close all dropdowns
+  const closeDropdowns = () => {
+    if (featureRef.current) featureRef.current.removeAttribute("open");
+    if (menuRef.current) menuRef.current.removeAttribute("open");
+  };
+
+  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         featureRef.current && !featureRef.current.contains(event.target) &&
         menuRef.current && !menuRef.current.contains(event.target)
       ) {
-        featureRef.current.removeAttribute("open");
-        menuRef.current.removeAttribute("open");
+        closeDropdowns();
       }
     };
 
@@ -40,7 +45,7 @@ export default function Navbar() {
             <details ref={featureRef}>
               <summary>Feature</summary>
               <ul className="bg-base-100 rounded-t-none p-2">
-                <li><Link to="/docs">Password leak</Link></li>
+                <li><Link to="/docs" onClick={closeDropdowns}>Password leak</Link></li>
               </ul>
             </details>
           </li>
@@ -50,9 +55,9 @@ export default function Navbar() {
             <details ref={menuRef}>
               <summary>Menu</summary>
               <ul className="bg-base-100 rounded-t-none p-2">
-                <li><Link to="/user">User</Link></li>
-                <li><Link to="/docs">Docs</Link></li>
-                <li><Link to="/about">About</Link></li>
+                <li><Link to="/user" onClick={closeDropdowns}>User</Link></li>
+                <li><Link to="/docs" onClick={closeDropdowns}>Docs</Link></li>
+                <li><Link to="/about" onClick={closeDropdowns}>About</Link></li>
               </ul>
             </details>
           </li>
