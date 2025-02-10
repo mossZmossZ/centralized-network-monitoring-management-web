@@ -30,12 +30,12 @@ async def debug_pdflatex():
         return {"pdflatex_version": output.decode("utf-8")}
     except FileNotFoundError:
         return {"error": "pdflatex not found"}
-
+'''
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(update_ping_status())
-
-app.include_router(ping_router)
+'''
+#app.include_router(ping_router)
 app.include_router(docker_router)
 app.include_router(report_router)
 app.include_router(file_manager_router)

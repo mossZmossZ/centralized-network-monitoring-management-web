@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 export function Report() {
   const [startDate, setStartDate] = useState("");
@@ -8,39 +9,52 @@ export function Report() {
   const [selectedFile, setSelectedFile] = useState("");
 
   const handleGenerateReport = async () => {
-    const response = await fetch("http://localhost:8000/api/report/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ startDate, endDate, reportType }),
-    });
-    if (response.ok) {
+    try {
+      await axios.post("http://localhost:8000/api/report/generate", {
+        start_date: startDate,  // ✅ Match FastAPI field name
+        end_date: endDate,      // ✅ Match FastAPI field name
+        report_type: reportType // ✅ Match FastAPI field name
+      });
+
       alert("Report generated successfully!");
       fetchGeneratedFiles();
-    } else {
-      alert("Failed to generate report!");
+    } catch (error) {
+      alert(`Failed to generate report: ${error.response?.data?.detail || error.message}`);
     }
   };
 
   const fetchGeneratedFiles = async () => {
-    const response = await fetch("http://localhost:8000/api/files");
-    const data = await response.json();
-    setGeneratedFiles(data);
+    try {
+      const response = await axios.get("http://localhost:8000/api/files");
+      setGeneratedFiles(response.data);
+    } catch (error) {
+      console.error("Failed to fetch files:", error);
+    }
   };
 
-  const handleViewFile = async (file) => {
+  const handleViewFile = (file) => {
     setSelectedFile(file);
   };
 
   const handleDownloadFile = async (file) => {
-    const response = await fetch(`http://localhost:8000/api/files/download/${file}`);
-    const blob = await response.blob();
-    const link = document.createElement("a");
-    link.href = window.URL.createObjectURL(blob);
-    link.download = file;
-    link.click();
+    try {
+      const response = await axios.get(`http://localhost:8000/api/files/download/${file}`, {
+        responseType: "blob", // ✅ Important for handling binary data
+      });
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = file;
+      link.click();
+    } catch{
+      alert("Failed to download file.");
+    }
   };
+
+  useEffect(() => {
+    fetchGeneratedFiles();
+  }, []); // ✅ Fetch files on component mount
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-6">
