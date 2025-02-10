@@ -5,4 +5,4 @@ export function Report() {
       <p className="mt-2 text-gray-600">View system reports here.</p>
     </div>
   );
-}
+}//หน้า Report ให้ระบุเป็น ช่วงเวลา ในการ custom ออโต้ให้เป็น เดือน สัปดาห์
