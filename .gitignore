@@ -18,3 +18,5 @@ db-data/
 
 # Environment variables
 .env
+
+frontend/generated_reports/
