@@ -19,4 +19,4 @@ db-data/
 # Environment variables
 .env
 
-frontend/generated_reports/
+backend/generated_reports/
