@@ -56,7 +56,7 @@ export function Systems() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 w-full bg-gray-100 pt-0">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 w-full  pt-0">
       {Object.keys(services).map((category) => (
         <div key={category} className="w-full max-w-5xl mt-6 border rounded-lg shadow-lg bg-white p-4">
           <h2 className="text-2xl font-semibold text-gray-700">{category}</h2>

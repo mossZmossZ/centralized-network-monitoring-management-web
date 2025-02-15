@@ -7,12 +7,12 @@ export function Report() {
   const [activeSection, setActiveSection] = useState("custom");
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen ">
       {/* Top Navigation Bar */}
       <div className="pt-10">
         <h1></h1>
       </div>
-      <div className="flex justify-center mt-4 p-2 space-x-4  border-gray-300">
+      <div className="flex justify-left  p-2 space-x-4  border-gray-300">
         <button
           className={`btn ${
             activeSection === "custom" ? "btn-primary" : "btn-outline"
@@ -40,7 +40,7 @@ export function Report() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-grow flex flex-col items-start justify-start p-6">
+      <div className="flex justify-center mt-4 p-2 space-x-4  border-gray-300">
         {activeSection === "custom" && <CustomReport />}
         {activeSection === "schedule" && <ScheduleReport />}
         {activeSection === "local" && <LocalFiles />}
