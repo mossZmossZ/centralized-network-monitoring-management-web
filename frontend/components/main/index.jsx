@@ -16,23 +16,29 @@ export default function Main() {
 
       {/* Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 w-full max-w-4xl">
-        <div className="card bg-base-200 shadow-md p-6">
-          <h2 className="text-xl font-semibold">Report system</h2>
+        {/* Report System Card */}
+        <Link to="/report" className="card bg-base-200 shadow-md p-6 hover:shadow-lg hover:scale-105 transition-transform">
+          <h2 className="text-xl font-semibold">Report System</h2>
           <p className="text-gray-500">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-        </div>
-        <div className="card bg-base-200 shadow-md p-6">
-          <h2 className="text-xl font-semibold">Alert system</h2>
-          <p className="text-gray-500">Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-        </div>
-        <div className="card bg-base-200 shadow-md p-6">
-          <h2 className="text-xl font-semibold">Password leak check</h2>
-          <p className="text-gray-500">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-        </div>
-      </div>
+        </Link>
 
-      <Link to="/docs">
-        <button className="btn btn-primary mt-4">Docs</button>
-      </Link>
+        {/* Alert System Card */}
+        <Link to="/alert" className="card bg-base-200 shadow-md p-6 hover:shadow-lg hover:scale-105 transition-transform">
+          <h2 className="text-xl font-semibold">Alert System</h2>
+          <p className="text-gray-500">Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        </Link>
+
+        {/* System Management Card */}
+        <Link to="/systems" className="card bg-base-200 shadow-md p-6 hover:shadow-lg hover:scale-105 transition-transform">
+          <h2 className="text-xl font-semibold">System Management</h2>
+          <p className="text-gray-500">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+        </Link>
+      </div>
+      <div className="mt-5">
+        <Link to="/docs">
+          <button className="btn btn-primary mt-4">Docs</button>
+        </Link>
+      </div>
     </main>
   );
 }
