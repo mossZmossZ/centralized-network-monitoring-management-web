@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Play, Pause, RefreshCw, FileText, Loader, X } from "lucide-react";
+import Swal from "sweetalert2";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -16,7 +18,7 @@ const services = {
   ],
   Dashboard: [
     { name: "Grafana", webUrl: import.meta.env.VITE_GRAFANA_WEB },
-    { name: "Uptime Kuma", webUrl: import.meta.env.VITE_UPTIMEKUMA_WEB },
+    { name: "UptimeKuma", webUrl: import.meta.env.VITE_UPTIMEKUMA_WEB },
   ],
 };
 
@@ -29,21 +31,62 @@ export function Systems() {
   useEffect(() => {
     const fetchStatuses = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/ping`);
-        const data = await response.json();
-        setStatusData(data);
+        // Single request to fetch all service statuses
+        const response = await axios.get(`${API_BASE_URL}/statuses`);
+        const updatedStatuses = {};
+
+        // Map the response to service categories
+        Object.keys(services).forEach((category) => {
+          updatedStatuses[category] = services[category].map((service) => ({
+            ...service,
+            status: response.data[service.name] ? "✅ Up" : "❌ Down", // Update based on API response
+          }));
+        });
+
+        setStatusData(updatedStatuses);
         setLoading(false);
       } catch (error) {
         console.error("❌ Error fetching service statuses:", error);
       }
     };
 
+    // Fetch once immediately and then poll every 30 seconds
     fetchStatuses();
-    const interval = setInterval(fetchStatuses, 10000);
+    const interval = setInterval(fetchStatuses, 30000); // Adjust polling interval
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch Dummy Logs for Each Service
+  const handleAction = async (action, serviceName) => {
+    try {
+      await Swal.fire({
+        title: `Executing ${action} on ${serviceName}`,
+        text: "Please wait...",
+        icon: "info",
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        timer: 2000,
+      });
+
+      // Dummy axios call
+      await axios.post(`${API_BASE_URL}/${action.toLowerCase()}`, {
+        service: serviceName,
+      });
+
+      Swal.fire({
+        title: `${action} Successful`,
+        text: `${serviceName} has been ${action.toLowerCase()}ed successfully!`,
+        icon: "success",
+      });
+    } catch (error) {
+      console.error(`❌ Error executing ${action} on ${serviceName}:`, error);
+      Swal.fire({
+        title: `${action} Failed`,
+        text: `Unable to ${action.toLowerCase()} ${serviceName}. Please try again later.`,
+        icon: "error",
+      });
+    }
+  };
+
   const handleViewLogs = (serviceName) => {
     setSelectedService(serviceName);
     setLogs(`
@@ -56,7 +99,7 @@ export function Systems() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 w-full  pt-0">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 w-full pt-0">
       {Object.keys(services).map((category) => (
         <div key={category} className="w-full max-w-5xl mt-6 border rounded-lg shadow-lg bg-white p-4">
           <h2 className="text-2xl font-semibold text-gray-700">{category}</h2>
@@ -70,55 +113,73 @@ export function Systems() {
               </tr>
             </thead>
             <tbody>
-              {services[category].map((service) => (
-                <tr key={service.name} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4">{service.name}</td>
-                  <td className="px-6 py-4 text-center">
-                    {loading ? (
-                      <Loader className="animate-spin text-gray-500" size={18} />
-                    ) : (
-                      <span className={`font-bold ${statusData[category]?.find(s => s.name === service.name)?.status.includes("✅") ? "text-green-600" : "text-red-600"}`}>
-                        {statusData[category]?.find(s => s.name === service.name)?.status || "❌ Down"}
+              {services[category].map((service) => {
+                const serviceStatus =
+                  statusData[category]?.find((s) => s.name === service.name)?.status || "❌ Down";
+                return (
+                  <tr key={service.name} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4">{service.name}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={`font-bold ${
+                          serviceStatus.includes("✅") ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {serviceStatus}
                       </span>
-                    )}
-                  </td>
+                    </td>
 
-                  {/* Centered Actions */}
-                  <td className="px-6 py-4">
-                    <div className="flex justify-center gap-2">
-                      <button className="btn btn-sm btn-success flex justify-center items-center" onClick={() => console.log("Start")}>
-                        <Play size={16} />
-                      </button>
-                      <button className="btn btn-sm btn-warning flex justify-center items-center" onClick={() => console.log("Stop")}>
-                        <Pause size={16} />
-                      </button>
-                      <button className="btn btn-sm btn-error flex justify-center items-center" onClick={() => console.log("Restart")}>
-                        <RefreshCw size={16} />
-                      </button>
-                      <button className="btn btn-sm btn-info flex justify-center items-center" onClick={() => handleViewLogs(service.name)}>
-                        <FileText size={16} />
-                      </button>
-                    </div>
-                  </td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          className="btn btn-sm btn-success flex justify-center items-center"
+                          onClick={() => handleAction("Start", service.name)}
+                        >
+                          <Play size={16} />
+                        </button>
+                        <button
+                          className="btn btn-sm btn-warning flex justify-center items-center"
+                          onClick={() => handleAction("Stop", service.name)}
+                        >
+                          <Pause size={16} />
+                        </button>
+                        <button
+                          className="btn btn-sm btn-error flex justify-center items-center"
+                          onClick={() => handleAction("Restart", service.name)}
+                        >
+                          <RefreshCw size={16} />
+                        </button>
+                        <button
+                          className="btn btn-sm btn-info flex justify-center items-center"
+                          onClick={() => handleViewLogs(service.name)}
+                        >
+                          <FileText size={16} />
+                        </button>
+                      </div>
+                    </td>
 
-                  {/* Centered Web Column */}
-                  <td className="px-6 py-4 text-center">
-                    {service.webUrl ? (
-                      <a href={service.webUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex justify-center">
-                        <Globe size={20} />
-                      </a>
-                    ) : (
-                      <Globe size={20} className="opacity-50" />
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    <td className="px-6 py-4 text-center">
+                      {service.webUrl ? (
+                        <a
+                          href={service.webUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 flex justify-center"
+                        >
+                          <Globe size={20} />
+                        </a>
+                      ) : (
+                        <Globe size={20} className="opacity-50" />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       ))}
 
-      {/* Logs Modal */}
       <AnimatePresence>
         {selectedService && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
