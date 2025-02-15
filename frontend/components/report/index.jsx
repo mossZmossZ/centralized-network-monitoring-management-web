@@ -12,7 +12,7 @@ export function Report() {
       <div className="pt-10">
         <h1></h1>
       </div>
-      <div className="flex justify-left  p-2 space-x-4  border-gray-300">
+      <div className="flex justify-left  p-1 space-x-4  ml-8 border-gray-300">
         <button
           className={`btn ${
             activeSection === "custom" ? "btn-primary" : "btn-outline"
@@ -27,7 +27,7 @@ export function Report() {
           }`}
           onClick={() => setActiveSection("schedule")}
         >
-          Schedule Report
+          Schedule
         </button>
         <button
           className={`btn ${
@@ -35,12 +35,12 @@ export function Report() {
           }`}
           onClick={() => setActiveSection("local")}
         >
-          Local Files
+          Local
         </button>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex justify-center mt-4 p-2 space-x-4  border-gray-300">
+      <div className="flex justify-center mt-4 p-2 space-x-4 border-gray-300">
         {activeSection === "custom" && <CustomReport />}
         {activeSection === "schedule" && <ScheduleReport />}
         {activeSection === "local" && <LocalFiles />}
