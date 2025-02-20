@@ -10,6 +10,7 @@ import { Setting } from "../components/settings/index.jsx";
 import { User } from "../components/user/index.jsx";
 import DocsIndex from "../components/docs/DocsIndex.jsx";
 import { Login } from "../components/login/index.jsx";
+import { Maintenance } from "../components/maintenance/index.jsx";
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/user" element={<User />} />
             <Route path="/docs" element={<DocsIndex />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/maintenance" element={<Maintenance />} />
           </Routes>
         </div>
         <Footer />
