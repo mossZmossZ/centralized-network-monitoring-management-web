@@ -20,3 +20,6 @@ db-data/
 .env
 
 backend/generated_reports/
+
+# PDF
+*.pdf
