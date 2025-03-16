@@ -6,6 +6,30 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
 
+def draw_footer(c):
+    """
+    Draws a footer on each page with three sections:
+    - Left: "Centralized Monitoring Daily"
+    - Center: "Confidential for internal use" (in red)
+    - Right: "Report Date: 2025-02-10"
+    """
+    page_width, _ = A4
+    footer_y = 30  # Footer position
+
+    # Left-aligned text
+    c.setFont("Helvetica", 10)
+    c.drawString(30, footer_y, "Centralized Monitoring Daily Report")
+
+    # Centered red text
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(colors.red)
+    c.drawCentredString(page_width / 2, footer_y, "Confidential for internal use")
+
+    # Right-aligned text
+    c.setFont("Helvetica", 10)
+    c.setFillColor(colors.black)
+    c.drawRightString(page_width - 30, footer_y, "Report Date: 2025-02-10")
+
 def generate_chart(data, chart_type, filename, colors_list=None,
                    labels=None, ylim=None, figsize=(6,4), dpi=150):
     """
@@ -57,8 +81,10 @@ def draw_centered_image(c, img_path, y, img_width, img_height):
     x = (page_width - img_width) / 2  # center horizontally
     c.drawImage(img_path, x, y, width=img_width, height=img_height, mask='auto')
 
-def generate_pdf(filename):
+def generate_pdf(api_response,filename):
     c = canvas.Canvas(filename, pagesize=A4)
+    c.setTitle(filename)
+
     page_width, page_height = A4
     
     # ------------------------------------------------------------------------
@@ -71,19 +97,19 @@ def generate_pdf(filename):
     c.drawCentredString(page_width / 2, page_height - 100, "Data Range: 2025-02-09 13:00 -- 2025-02-10 12:59 GMT+7")
     
     # ------------------------------------------------------------------------
-    # NETWORK DEVICES SECTION
+    # NETWORK DEVICES SECTION (Now Uses API Data)
     # ------------------------------------------------------------------------
     c.setFont("Helvetica-Bold", 14)
     c.drawString(30, page_height - 140, "Network Devices Section")
-    
-    network_data = [
-        ["Time", "Host", "Problem", "Duration"],
-        ["2025-03-10 12:47:49 PM", "Switch 3750 Comcenter",
-         "Interface Gi1/0/40(): Link down", "2d 4h 59m"]
-    ]
+
+    # Fetch network issues data from API response
+    network_data = [["Time", "Host", "Problem", "Duration"]] + api_response.get("network_issues", [])
+
+    # Define table properties
     table_width = page_width - 60
-    network_col_widths = [table_width * 0.25, table_width * 0.25,
-                          table_width * 0.35, table_width * 0.15]
+    network_col_widths = [table_width * 0.25, table_width * 0.25, table_width * 0.35, table_width * 0.15]
+
+    # Create and style table
     network_table = Table(network_data, colWidths=network_col_widths)
     network_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -94,16 +120,22 @@ def generate_pdf(filename):
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
+
+    # Draw the table on the PDF
     network_table.wrapOn(c, page_width, page_height)
     network_table.drawOn(c, 30, page_height - 200)
-    
-    # Problem History (LINE CHART)
-    problem_data = pd.DataFrame({
-        "Link Down": [4, 3, 3, 5],
-        "Speed Change": [2, 4, 2, 3],
-        "Port Failure": [2, 3, 4, 5]
-    }, index=["28/2/2025 21:13", "30/2/2025 21:13:58", "X", "Y"])
+
+    # ------------------------------------------------------------------------
+    # PROBLEM HISTORY (Dynamically Uses API Data)
+    # ------------------------------------------------------------------------
+
+    # Convert API response to DataFrame for chart
+    problem_data = pd.DataFrame(api_response.get("problem_history", {}))
+
+    # Define chart filename
     problem_chart = "problem_history.png"
+
+    # Generate chart dynamically
     generate_chart(
         data=problem_data,
         chart_type="line",
@@ -114,21 +146,27 @@ def generate_pdf(filename):
         figsize=(5, 3),
         dpi=150
     )
+
+    # Insert the chart into PDF
     draw_centered_image(c, problem_chart, y=page_height - 520, img_width=500, img_height=300)
+
+    # Remove chart image file after inserting into PDF
     os.remove(problem_chart)
+
     
     # ------------------------------------------------------------------------
-    # OPERATING SYSTEMS SECTION
+    # OPERATING SYSTEMS SECTION (Now Uses API Data)
     # ------------------------------------------------------------------------
+    draw_footer(c)  # Add footer
     c.showPage()
+
     c.setFont("Helvetica-Bold", 14)
     c.drawString(30, page_height - 50, "Operating Systems Section")
-    
-    os_data = [
-        ["Time", "Host", "Problem", "Duration"],
-        ["2025-02-28 09:13:58 PM", "Host1", "High CPU Load", "12h 30m"],
-        ["2025-02-28 10:15:22 PM", "Host2", "Memory Usage High", "8h 20m"]
-    ]
+
+    # Fetch operating system issues from API response
+    os_data = [["Time", "Host", "Problem", "Duration"]] + api_response.get("os_issues", [])
+
+    # Define table properties
     os_table = Table(os_data, colWidths=network_col_widths)
     os_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -139,16 +177,22 @@ def generate_pdf(filename):
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
+
+    # Draw the table on the PDF
     os_table.wrapOn(c, page_width, page_height)
     os_table.drawOn(c, 30, page_height - 120)
-    
-    # CPU Load (LINE CHART)
-    cpu_data = pd.DataFrame({
-        "Host1": [30, 50, 70, 90],
-        "Host2": [20, 60, 40, 80],
-        "Host3": [50, 60, 80, 90]
-    }, index=["00:00", "06:00", "12:00", "18:00"])
+
+    # ------------------------------------------------------------------------
+    # CPU LOAD CHART (Dynamically Uses API Data)
+    # ------------------------------------------------------------------------
+
+    # Convert API response to DataFrame for chart
+    cpu_data = pd.DataFrame(api_response.get("cpu_usage", {}))
+
+    # Define chart filename
     cpu_chart = "cpu_load.png"
+
+    # Generate CPU Load chart dynamically
     generate_chart(
         data=cpu_data,
         chart_type="line",
@@ -159,12 +203,18 @@ def generate_pdf(filename):
         figsize=(5, 3),
         dpi=150
     )
+
+    # Insert the chart into PDF
     draw_centered_image(c, cpu_chart, y=page_height - 420, img_width=500, img_height=300)
+
+    # Remove chart image file after inserting into PDF
     os.remove(cpu_chart)
+
     
     # ------------------------------------------------------------------------
     # WEB APPLICATION SECTION
     # ------------------------------------------------------------------------
+    draw_footer(c)  # Add footer
     c.showPage()
     c.setFont("Helvetica-Bold", 14)
     c.drawString(30, page_height - 50, "Web Application Section")
@@ -212,7 +262,9 @@ def generate_pdf(filename):
     # ------------------------------------------------------------------------
     # INCIDENT SUMMARY BY CATEGORY (PIE CHART)
     # ------------------------------------------------------------------------
+    draw_footer(c)  # Add footer
     c.showPage()
+   
     c.setFont("Helvetica-Bold", 14)
     c.drawString(30, page_height - 50, "Incident Summary by Category")
     
@@ -237,6 +289,7 @@ def generate_pdf(filename):
     # ------------------------------------------------------------------------
     # THREATS DETECTED (NEW LAST PAGE)
     # ------------------------------------------------------------------------
+    draw_footer(c)  # Add footer
     c.showPage()
     c.setFont("Helvetica-Bold", 14)
     c.drawString(30, page_height - 50, "Threats Detected")
@@ -284,5 +337,53 @@ def generate_pdf(filename):
     # Finally save the PDF
     c.save()
 
-# Generate the PDF
-generate_pdf("Centralized_Monitoring_Report.pdf")
+# Example API Data
+api_response = {
+    "report_date": "2025-03-16",
+    "data_range": "2025-03-15 13:00 -- 2025-03-16 12:59 GMT+7",
+
+    "network_issues": [
+        ["2025-03-15 12:47:49 PM", "Switch 3750 Comcenter", "Interface Gi1/0/40(): Link down", "2d 4h 59m"]
+    ],
+
+    "problem_history": {
+        "Link Down": [4, 3, 5, 6],
+        "Speed Change": [2, 5, 2, 3],
+        "Port Failure": [3, 4, 5, 7]
+    },
+
+    "os_issues": [
+        ["2025-02-28 09:13:58 PM", "Host1", "High CPU Load", "12h 30m"]
+    ],
+
+    "cpu_usage": {
+        "Host1": [30, 50, 75, 85],
+        "Host2": [25, 60, 48, 78]
+    },
+
+    "web_issues": [
+        ["2025-03-11 11:06:28", "ECE ENG", "Down", "Request failed with status code 500"]
+    ],
+
+    "web_downtime": {
+        "ECE ENG": [3, 4, 5, 7]
+    },
+
+    "incident_summary": {
+        "Network Devices": 15,
+        "Operating Systems": 9,
+        "Web Application": 6
+    },
+
+    "threats_detected": [
+        ["2025-03-15 10:25:00", "Malware XYZ", "7"]
+    ],
+
+    "threats_history": {
+        "Malware XYZ": [3, 5, 4, 7]
+    }
+}
+
+# Generate report with API data
+generate_pdf(api_response,"Centralized_Monitoring_Report.pdf")
+
