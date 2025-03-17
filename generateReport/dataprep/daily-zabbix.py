@@ -1,5 +1,6 @@
 import os
 import requests
+import re
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -55,6 +56,138 @@ def get_discovered_hosts_group_id():
         return groups[0]["groupid"]  # Return the first matching group ID
     return None
 
+def get_Zabbix_servers_group_id():
+    """Fetch the Host Group ID for 'Discovered Hosts' from Zabbix."""
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
+    }
+    
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "hostgroup.get",
+        "params": {
+            "output": ["groupid"],
+            "filter": {"name": ["Zabbix servers"]}
+        },
+        "auth": None,
+        "id": 1
+    }
+
+    response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
+    data = response.json()
+
+    if "error" in data:
+        print("Error fetching host group:", data["error"])
+        return None
+
+    groups = data.get("result", [])
+    if groups:
+        return groups[0]["groupid"]  # Return the first matching group ID
+    return None
+
+
+def get_today_server_problem():
+    """Fetch server-related problems from Zabbix for 'Zabbix Servers' only for today."""
+    group_id = get_Zabbix_servers_group_id()
+    if not group_id:
+        print("Could not find 'Zabbix servers' group.")
+        return []
+
+    # Define time range: Start of today to now
+    now = datetime.now()
+    start_of_today = datetime(now.year, now.month, now.day, 0, 0)  # Midnight today
+    time_from = int(start_of_today.timestamp())  # Start of today
+    time_to = int(now.timestamp())  # Current time
+
+    # Request headers for API authentication
+    HEADERS = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"  # Use API Token
+    }
+
+    # API request payload
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "event.get",
+        "params": {
+            "output": ["clock", "name", "objectid"],
+            "selectHosts": ["host"],
+            "selectAlerts": ["message"],
+            "groupids": [group_id],  # Filter events by Zabbix Servers group
+            "source": 0,  # Triggers
+            "value": 1,   # Problem state (Active Issues)
+            "time_from": time_from,
+            "time_till": time_to,
+            "sortfield": ["clock"],
+            "sortorder": "DESC",
+            "limit": 500  # Fetch more events for accurate categorization
+        },
+        "auth": None,
+        "id": 1
+    }
+
+    # Send API request
+    response = requests.post(ZABBIX_API_URL, json=payload, headers=HEADERS)
+    data = response.json()
+
+    # Check for errors
+    if "error" in data:
+        print("Error:", data["error"])
+        return []
+
+    # Process results
+    server_issues = []
+    for issue in data.get("result", []):
+        # Convert timestamp to formatted datetime
+        timestamp = datetime.fromtimestamp(int(issue["clock"]))
+        formatted_time = timestamp.strftime("%Y-%m-%d %I:%M:%S %p")  # Example: "2025-03-15 12:47:49 PM"
+
+        # Get Host (default to 'Unknown' if missing)
+        host = issue["hosts"][0]["host"] if "hosts" in issue and issue["hosts"] else "Unknown"
+
+        # Get Full Problem Description
+        full_problem_description = issue.get("name", "Unknown Issue")
+
+        # Extract problem type (Keep only "Link Down", "CPU High", etc.)
+        problem_type = extract_problem_type(full_problem_description)
+
+        # Calculate Duration
+        duration_seconds = int(now.timestamp()) - int(issue["clock"])
+        days, remainder = divmod(duration_seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes = remainder // 60
+        duration_str = f"{days}d {hours}h {minutes}m"
+
+        # Append to results
+        server_issues.append([formatted_time, host, problem_type, duration_str])
+
+    return {"os_issues": server_issues}  # Return formatted list
+
+
+def extract_problem_type(description):
+    """
+    Extract only the core problem type from the full problem description.
+    Example: 
+      "Interface Gi1/0/24(vlan 50 for cctv): Link down" → "Link Down"
+      "CPU utilization is high" → "CPU High"
+    """
+
+    # Common problem patterns
+    problem_keywords = [
+        "link down", "speed change", "disk full", "high memory usage",
+        "cpu high", "icmp unreachable", "no snmp data collection",
+        "power supply warning", "temperature warning"
+    ]
+
+    # Check if any known problem type is in the description
+    for keyword in problem_keywords:
+        if keyword in description.lower():
+            return keyword.title()  # Convert to title case (e.g., "Link Down")
+
+    # If no match, return "Other Issue"
+    return "Other Issue"
+
 
 def get_today_zabbix_problem():
     """Fetch network-related problems from Zabbix for 'Discovered Hosts' only for today."""
@@ -108,56 +241,194 @@ def get_today_zabbix_problem():
     # Process results
     network_issues = []
     for issue in data.get("result", []):
+        # Convert timestamp to formatted datetime
         timestamp = datetime.fromtimestamp(int(issue["clock"]))
-        time_str = timestamp.strftime("%H:%M")  # Get time in HH:MM format
-        problem_type = issue.get("name", "Unknown Issue")  # Problem description
+        formatted_time = timestamp.strftime("%Y-%m-%d %I:%M:%S %p")  # Example: "2025-03-15 12:47:49 PM"
 
-        network_issues.append({"time": time_str, "problem_type": problem_type})
+        # Get Host (default to 'Unknown' if missing)
+        host = issue["hosts"][0]["host"] if "hosts" in issue and issue["hosts"] else "Unknown"
 
-    return network_issues  # Return the cleaned issues list
+        # Get Problem Description
+        full_problem_description = issue.get("name", "Unknown Issue")
+
+        # Extract problem type using category_map
+        problem_type = "Other Issue"
+        for category, keywords in category_map.items():
+            if any(keyword in full_problem_description.lower() for keyword in keywords):
+                problem_type = category
+                break
+
+        # Calculate Duration
+        duration_seconds = int(now.timestamp()) - int(issue["clock"])
+        days, remainder = divmod(duration_seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes = remainder // 60
+        duration_str = f"{days}d {hours}h {minutes}m"
+
+        # Append to results
+        network_issues.append([formatted_time, host, problem_type, duration_str])
+
+    return {"network_issues": network_issues}  # Return formatted list
+
+
 
 
 def get_problem_graph():
     """Generate structured problem history graph data from Zabbix problems for today."""
-    raw_issues = get_today_zabbix_problem()  # Fetch today's problem data
+    raw_issues_data = get_today_zabbix_problem()  # Fetch today's problem data
+    raw_issues = raw_issues_data["network_issues"]  # Extract network issues list
 
-    problem_history = defaultdict(lambda: [0] * len(time_slots))  # Default 0 counts
+    # Initialize problem history with empty counts for each time slot
+    problem_history = defaultdict(lambda: [0] * len(time_slots))
 
     for issue in raw_issues:
-        problem_type = issue["problem_type"].lower()  # Convert to lowercase for case-insensitive matching
-        event_hour = int(issue["time"].split(":")[0])  # Convert event time (HH:MM) to integer hour
+        formatted_time, host, problem_type, duration = issue  # Extract issue details
 
-        # Assign problem type to a category
-        assigned = False
-        for category, keywords in category_map.items():
-            if any(keyword in problem_type for keyword in keywords):
-                assigned = True
-                for i in range(len(time_slots)):
-                    if i == len(time_slots) - 1:  # Last slot (20:00 - 00:00)
-                        if event_hour >= time_slots[i] or event_hour < time_slots[0]:
-                            problem_history[category][i] += 1
-                            break
-                    elif time_slots[i] <= event_hour < time_slots[i + 1]:  # Any other slot
-                        problem_history[category][i] += 1
-                        break
-                break
-        
-        # If no category matched, put it in "Other Issues"
-        if not assigned:
-            for i in range(len(time_slots)):
-                if i == len(time_slots) - 1:  # Last slot (20:00 - 00:00)
-                    if event_hour >= time_slots[i] or event_hour < time_slots[0]:
-                        problem_history["Other Issues"][i] += 1
-                        break
-                elif time_slots[i] <= event_hour < time_slots[i + 1]:  # Any other slot
-                    problem_history["Other Issues"][i] += 1
+        # Extract the hour from the formatted timestamp (e.g., "2025-03-17 12:14:54 AM")
+        event_hour = datetime.strptime(formatted_time, "%Y-%m-%d %I:%M:%S %p").hour
+
+        # Assign to correct time slot
+        for i in range(len(time_slots)):
+            if i == len(time_slots) - 1:  # Last slot (20:00 - 00:00)
+                if event_hour >= time_slots[i] or event_hour < time_slots[0]:
+                    problem_history[problem_type][i] += 1
                     break
+            elif time_slots[i] <= event_hour < time_slots[i + 1]:  # Any other slot
+                problem_history[problem_type][i] += 1
+                break
 
     return {"problem_history": dict(problem_history)}  # Convert defaultdict to dict
+
+def count_today_problems():
+    """Count the total number of problems reported today from Zabbix."""
+    raw_issues_data = get_today_zabbix_problem()  # Fetch today's problem data
+    raw_issues = raw_issues_data["network_issues"]  # Extract network issues list
+
+    # Count the number of issues
+    total_problems = len(raw_issues)
+
+    return total_problems
+
+def count_today_server_problems():
+    """Count the total number of problems reported today from Zabbix."""
+    raw_issues_data = get_today_server_problem()  # Fetch today's problem data
+    raw_issues = raw_issues_data["os_issues"]  # Extract network issues list
+
+    # Count the number of issues
+    total_server_problems = len(raw_issues)
+
+    return total_server_problems
+
+def get_today_cpu_usage():
+    """Fetch CPU usage data for all hosts in the 'Zabbix Servers' group."""
+    group_id = get_Zabbix_servers_group_id()
+    if not group_id:
+        print("Could not find 'Zabbix Servers' group.")
+        return {}
+
+    # Request headers for API authentication
+    HEADERS = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"  # Use API Token
+    }
+
+    # Step 1: Get all hosts in the Zabbix Servers group
+    payload_hosts = {
+        "jsonrpc": "2.0",
+        "method": "host.get",
+        "params": {
+            "output": ["hostid", "name"],
+            "groupids": [group_id]
+        },
+        "auth": None,
+        "id": 1
+    }
+
+    response_hosts = requests.post(ZABBIX_API_URL, json=payload_hosts, headers=HEADERS)
+    data_hosts = response_hosts.json()
+
+    if "error" in data_hosts:
+        print("Error fetching hosts:", data_hosts["error"])
+        return {}
+
+    hosts = {host["hostid"]: host["name"] for host in data_hosts.get("result", [])}
+
+    # Step 2: Fetch CPU usage metrics for each host
+    cpu_usage = defaultdict(list)
+
+    for host_id, host_name in hosts.items():
+        item_id = get_cpu_itemid(host_id)
+        if not item_id:
+            print(f"No CPU item found for {host_name}")
+            continue
+
+        payload_cpu = {
+            "jsonrpc": "2.0",
+            "method": "history.get",
+            "params": {
+                "output": "extend",
+                "history": 0,  # Numeric values
+                "itemids": item_id,
+                "sortfield": "clock",
+                "sortorder": "DESC",
+                "limit": 4  # Last 4 data points
+            },
+            "auth": None,
+            "id": 1
+        }
+
+        response_cpu = requests.post(ZABBIX_API_URL, json=payload_cpu, headers=HEADERS)
+        data_cpu = response_cpu.json()
+
+        if "error" in data_cpu:
+            print(f"Error fetching CPU data for {host_name}:", data_cpu["error"])
+            continue
+
+        # Extract CPU values as floats (to handle cases like 0.003814697265625)
+        cpu_values = [float(entry["value"]) for entry in data_cpu.get("result", [])]
+        cpu_usage[host_name] = cpu_values if cpu_values else [0.0] * 4  # Fill empty values with 0.0
+
+    return {"cpu_usage": dict(cpu_usage)}  # Convert defaultdict to dict
+
+
+def get_cpu_itemid(host_id):
+    """Fetch the item ID for CPU usage for a given host ID."""
+    
+    # Ensure we use API Token Authentication
+    HEADERS = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"  # Use API Token
+    }
+
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["itemid"],
+            "hostids": host_id,
+            "search": {"key_": "system.cpu.util"},  # Searches for CPU utilization key
+            "sortfield": "name"
+        },
+        "id": 1
+    }
+
+    response = requests.post(ZABBIX_API_URL, json=payload, headers=HEADERS)
+    data = response.json()
+
+    if "error" in data:
+        print("Error fetching CPU item:", data["error"])
+        return None
+
+    items = data.get("result", [])
+    return items[0]["itemid"] if items else None  # Return the first matching item ID
 
 
 # Example Usage
 if __name__ == "__main__":
-    problem_data = get_problem_graph()  # Fetch problem history for today
-    print(problem_data)  # Print final structured data
-    #print(get_today_zabbix_problem())
+    #problem_data = get_problem_graph()  # Fetch problem history for today
+    #print(problem_data)  # Print final structured data
+    print(get_today_zabbix_problem())
+    #print(count_today_problems())
+    #print(get_today_server_problem())
+    #print(count_today_server_problems())
+    #print(get_today_cpu_usage())
