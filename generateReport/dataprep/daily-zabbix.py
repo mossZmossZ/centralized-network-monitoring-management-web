@@ -1,10 +1,9 @@
 import os
 import requests
-import re
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from collections import defaultdict
-
+import json
 # Load environment variables
 load_dotenv()
 
@@ -17,6 +16,7 @@ ZABBIX_API_URL = f"{ZABBIX_SERVER}/api_jsonrpc.php"
 
 # Define time slots (converted to integer hours for correct comparison)
 time_slots = [0, 4, 8, 12, 16, 20]
+time_slots_cpu = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
 # Define problem categories
 category_map = {
@@ -319,24 +319,8 @@ def count_today_server_problems():
 
     return total_server_problems
 
-import os
-import requests
-from dotenv import load_dotenv
-from datetime import datetime, timedelta
-from collections import defaultdict
-
-# Load environment variables
-load_dotenv()
-
-# Read Zabbix credentials
-ZABBIX_SERVER = os.getenv("ZABBIX_SERVER")
-ZABBIX_API_TOKEN = os.getenv("ZABBIX_API_TOKEN")
-
-# Zabbix API URL
-ZABBIX_API_URL = f"{ZABBIX_SERVER}/api_jsonrpc.php"
-
 def get_today_cpu_usage():
-    """Fetch CPU usage data for all hosts in the 'Zabbix Servers' group."""
+    """Fetch and structure CPU usage data for each host."""
     
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
@@ -353,7 +337,7 @@ def get_today_cpu_usage():
         "jsonrpc": "2.0",
         "method": "host.get",
         "params": {
-            "output": ["hostid", "name"],  # Get host ID and host name
+            "output": ["hostid", "name"],
             "groupids": [group_id]
         },
         "id": 1
@@ -369,7 +353,10 @@ def get_today_cpu_usage():
     hosts = {host["hostid"]: host["name"] for host in data_hosts.get("result", [])}
 
     # Step 2: Fetch CPU usage metrics for each host
-    cpu_usage = defaultdict(list)
+    cpu_usage = defaultdict(lambda: [0] * len(time_slots_cpu))
+
+    now = datetime.now()
+    timestamps = [(now.replace(hour=int(ts.split(":")[0]), minute=0, second=0) - timedelta(days=1)).timestamp() for ts in time_slots_cpu]
 
     for host_id, host_name in hosts.items():
         item_id = get_cpu_itemid(host_id)
@@ -377,43 +364,61 @@ def get_today_cpu_usage():
             print(f"⚠️ No valid CPU item found for {host_name} (Host ID: {host_id})")
             continue
 
-        time_from = int((datetime.now() - timedelta(days=1)).timestamp())  # Fetch last 24 hours
-
-        payload_cpu = {
-            "jsonrpc": "2.0",
-            "method": "history.get",
-            "params": {
-                "output": "extend",
-                "history": 3,  # Fetch floating-point CPU utilization values
-                "itemids": item_id,
-                "sortfield": "clock",
-                "sortorder": "DESC",
-                "time_from": time_from,  # Fetch data from last 24 hours
-                "limit": 10  # Fetch last 10 data points
-            },
-            "id": 1
-        }
-
-        response_cpu = requests.post(ZABBIX_API_URL, json=payload_cpu, headers=HEADERS)
-        data_cpu = response_cpu.json()
-        
-        if "error" in data_cpu:
-            print(f"❌ Error fetching CPU data for {host_name}:", data_cpu["error"])
+        cpu_data = fetch_cpu_data(host_id, item_id)
+        if not cpu_data:
+            print(f"⚠️ Warning: No CPU data found for {host_name}.")
             continue
 
-        # 🔍 Debugging: Print raw response to verify correct values
-        print(f"🔍 Raw CPU History Response for {host_name}: {data_cpu}")
+        # Convert timestamps to HH:MM format and map values
+        cpu_values = {
+            datetime.fromtimestamp(int(entry["clock"])).strftime("%H:%M"): round(float(entry["value"]), 2)  # Remove * 100
+            for entry in cpu_data
+        }
 
-        # Extract and scale CPU values correctly
-        cpu_values = [round(float(entry["value"]), 2) for entry in data_cpu.get("result", [])]
+        # Align CPU values to predefined time slots
+        aligned_values = []
+        for ts in time_slots_cpu:
+            closest_time = min(cpu_values.keys(), key=lambda t: abs(datetime.strptime(t, "%H:%M") - datetime.strptime(ts, "%H:%M"))) if cpu_values else None
+            aligned_values.append(cpu_values.get(closest_time, 0))
 
-        if not cpu_values:
-            print(f"⚠️ Warning: No CPU data found for {host_name}.")
-            cpu_values = [0.0] * 10  # Fill empty values with 0.0
+        cpu_usage[host_name] = aligned_values
 
-        cpu_usage[host_name] = cpu_values
+    return {"cpu_usage": dict(cpu_usage)}
 
-    return {"cpu_usage": dict(cpu_usage)}  # Convert defaultdict to dict
+
+def fetch_cpu_data(host_id, item_id):
+    """Fetch the last 24 hours of CPU history for the given item ID."""
+
+    HEADERS = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
+    }
+
+    time_from = int((datetime.now() - timedelta(days=1)).timestamp())
+
+    payload_cpu = {
+        "jsonrpc": "2.0",
+        "method": "history.get",
+        "params": {
+            "output": "extend",
+            "history": 0,  # Use history type 0 (integer)
+            "itemids": item_id,
+            "sortfield": "clock",
+            "sortorder": "ASC",
+            "time_from": time_from,
+            "limit": 1000
+        },
+        "id": 1
+    }
+
+    response_cpu = requests.post(ZABBIX_API_URL, json=payload_cpu, headers=HEADERS)
+    data_cpu = response_cpu.json()
+
+    if "error" in data_cpu:
+        print(f"❌ Error fetching CPU data for {host_id}:", data_cpu["error"])
+        return []
+
+    return data_cpu.get("result", [])
 
 
 def get_cpu_itemid(host_id):
@@ -430,7 +435,7 @@ def get_cpu_itemid(host_id):
         "params": {
             "output": ["itemid", "key_"],
             "hostids": host_id,
-            "search": {"key_": "system.cpu.util"},  # Fetch CPU utilization key
+            "search": {"key_": "system.cpu.util"},
             "sortfield": "name"
         },
         "id": 1
@@ -443,20 +448,10 @@ def get_cpu_itemid(host_id):
         print("❌ Error fetching CPU item:", data["error"])
         return None
 
-    print(f"🔍 Raw item.get Response for Host {host_id}: {data}")  # Debugging output
-
-    items = data.get("result", [])
-    if not items:
-        print(f"❌ No CPU utilization item found for host {host_id}.")
-        return None
-
-    for item in items:
-        print(f"🔹 Checking item: {item}")  # Debugging print
-        if item.get("key_") == "system.cpu.util":  # 🔹 Ensure exact match
-            print(f"✅ Found CPU Utilization Item ID: {item['itemid']} for Host {host_id}")
+    for item in data.get("result", []):
+        if item.get("key_") == "system.cpu.util":
             return item["itemid"]
 
-    print(f"❌ No valid `system.cpu.util` item found for host {host_id}.")
     return None
 
 
@@ -468,5 +463,6 @@ if __name__ == "__main__":
     #print(count_today_problems())
     #print(get_today_server_problem())
     #print(count_today_server_problems())
+    # Example usage:
     print(get_today_cpu_usage())
     #print(get_all_cpu_items(10084))
