@@ -26,8 +26,8 @@ api_response = {
     ],
 
     "cpu_usage": {
-        "Host1": [30, 50, 75, 85],
-        "Host2": [25, 60, 48, 78]
+        "Host1": [30, 50, 75, 85,30,40],
+        "Host2": [25, 60, 48, 78,50,60]
     },
 
     "web_issues": [
@@ -47,13 +47,7 @@ api_response = {
         "Web Application": 6
     },
 
-    "threats_detected": [
-        ["2025-03-15 10:25:00", "Malware XYZ", "7"],
-        ["2025-03-15 10:25:00", "Malware XYZ", "7"],
-        ["2025-03-15 10:25:00", "Malware XYZ", "7"],
-        ["2025-03-15 10:25:00", "Malware XYZ", "7"],
-        ["2025-03-15 10:25:00", "Malware XYZ", "7"],
-    ],
+    'threats_detected': [['2025-03-19T08:33:19+07:00', 'SURICATA TCP Port Scan Detected', '1557'], ['2025-03-19T08:31:24+07:00', 'ET DROP Dshield Block Listed Source group 1', '81'], ['2025-03-19T08:30:11+07:00', 'ET SCAN Potential SSH Scan', '42'], ['2025-03-19T08:10:36+07:00', 'ET DROP Spamhaus DROP Listed Traffic Inbound group 55', '33'], ['2025-03-19T08:12:44+07:00', 'ET DROP Spamhaus DROP Listed Traffic Inbound group 37', '15'], ['2025-03-19T04:34:59+07:00', 'ET DROP Spamhaus DROP Listed Traffic Inbound group 31', '13'], ['2025-03-19T05:04:54+07:00', 'ET DROP Spamhaus DROP Listed Traffic Inbound group 12', '11'], ['2025-03-19T06:10:21+07:00', 'ET DROP Spamhaus DROP Listed Traffic Inbound group 29', '9'], ['2025-03-18T19:49:30+07:00', 'ET COMPROMISED Known Compromised or Hostile Host Traffic group 10', '5'], ['2025-03-18T15:27:31+07:00', 'ET DROP Spamhaus DROP Listed Traffic Inbound group 54', '5']],
 
     "threats_history": {
         "Malware XYZ": [3, 5, 4, 7]
