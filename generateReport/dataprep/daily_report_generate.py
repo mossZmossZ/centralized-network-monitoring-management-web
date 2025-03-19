@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import json
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -10,57 +11,79 @@ from reportlab.platypus import (
     BaseDocTemplate, PageTemplate, Frame,
     Paragraph, Spacer, Image, Table, TableStyle
 )
-api_response = {
-    "report_date": "2025-03-16",
-    "data_range": "2025-03-15 13:00 -- 2025-03-16 12:59 GMT+7",
+from datetime import datetime, timedelta
+from reportlab.lib import colors
+# Import your existing function
+from daily_zabbix import get_today_zabbix_problem,get_problem_graph,get_today_server_problem,get_today_cpu_usage
+from daily_uptimekuma import get_down_count_day,get_graph_down_day,get_monitor_down_day
+from daily_zabbix import count_today_problems,count_today_server_problems
+from daily_suricata import get_graph_threats,get_threat_summary
+# Get today's network issues from Zabbix
+zabbix_network_issues = get_today_zabbix_problem()
+zabbix_problem_history = get_problem_graph()
+zabbix_os_issues = get_today_server_problem()
+zabbix_cpu_uses = get_today_cpu_usage()
+zabbix_count_problem = count_today_problems()
+zabbix_count_server = count_today_server_problems()
 
-    "network_issues": [
-        ["2025-03-15 12:47:49 PM", "Switch 3750 Comcenter", "Interface Gi1/0/40(): Link down", "2d 4h 59m"]
-    ],
-    'problem_history': {'Speed Change': [0, 5, 6, 0, 0, 0], 
-                        'Link Down': [27, 33, 56, 0, 0, 0], 
-                        'Other Issue': [0, 1, 0, 0, 0, 0]},
+uptime_web_issue = json.loads(get_monitor_down_day())
+uptime_web_downtime = json.loads(get_graph_down_day())
+uptime_count_day = json.loads(get_down_count_day())
+
+suricata_threat = get_threat_summary()
+suricata_graph = get_graph_threats()
+print(zabbix_network_issues)
+print(zabbix_problem_history)
+
+# Get current date in "YYYY-MM-DD" format
+current_date = datetime.now().strftime("%Y-%m-%d")
+
+# Generate filename dynamically
+filename = f"Monitoring_Report_{current_date}.pdf"
+
+def generate_report_timestamp():
+    now = datetime.now()
+    start_time = now - timedelta(days=1)
     
+    report_date = now.strftime("%Y-%m-%d")
+    data_range = f"{start_time.strftime('%Y-%m-%d %H:%M')} -- {now.strftime('%Y-%m-%d %H:%M')} GMT+7"
+    
+    return {
+        "report_date": report_date,
+        "data_range": data_range
+    }
 
-    "os_issues": [
-        ["2025-02-28 09:13:58 PM", "Host1", "High CPU Load", "12h 30m"]
-    ],
 
-    "cpu_usage": {
-        "Host1": [30, 50, 75, 85,30,40],
-        "Host2": [25, 60, 48, 78,50,60]
-    },
+timestamps = generate_report_timestamp()
+api_response = {
+    "report_date": timestamps["report_date"],
+    "data_range": timestamps["data_range"],
 
-    "web_issues": [
-        ["2025-03-11 11:06:28", "ECE ENG", "Down", "Request failed with status code 500"],
-        ["2025-03-11 11:06:28", "ECE ENG", "Down", "Request failed with status code 500"]
-    ],
+    "network_issues": zabbix_network_issues.get("network_issues", []),
 
-    "web_downtime": {
-        "ECE ENG": [3, 4, 5, 7],
-        "ECC ENG": [2,4,5,6],
-        "KMUTNB" :[1,2,4,5]
-    },
+    'problem_history': zabbix_problem_history.get("problem_history", []),
+
+    "os_issues": zabbix_os_issues.get("os_issues", []),
+
+    "cpu_usage": zabbix_cpu_uses.get("cpu_usage", []),
+
+    "web_issues": uptime_web_issue.get("web_issues", []),
+
+    "web_downtime": uptime_web_downtime.get("web_downtime", []),
  
     "incident_summary": {
-        "Network Devices": 15,
-        "Operating Systems": 9,
-        "Web Application": 6
+        "Network Devices": zabbix_count_problem,
+        "Operating Systems": zabbix_count_server,
+        "Web Application": uptime_count_day.get("Web Application", [])
     },
 
-    'threats_detected': [['2025-03-19T08:33:19+07:00', 
-                          'Port Scan Detected', '1557'], 
-                          ['2025-03-19T08:31:24+07:00', 'DROP Dshield Block', '81']],
-    'threats_history':{
-        'DROP Listed': [8, 9, 9, 39, 44, 13], 
-        'Port Scan': [96, 61, 125, 387, 506, 346], 
-        'Dshield': [5, 3, 11, 38, 29, 16]
-        }
+    'threats_detected': suricata_threat.get("threats_detected", []),
+    'threats_history': suricata_graph.get("threats_history", []),
 }
 ###############################################################################
 # 1) Header & Footer Function
 ###############################################################################
-from reportlab.lib import colors
+
 
 def header_footer(canvas, doc):
     page_width, page_height = A4
@@ -166,7 +189,7 @@ def build_report(filename):
 
     # Fetch network issues data from API response
     network_issues_data = api_response.get("network_issues", [])
-    network_table_data = [["Time", "Host", "Problem", "Duration"]] + network_issues_data
+    network_table_data = [["Last problem", "Host", "Problem", "Count"]] + network_issues_data
     t_network = Table(
         network_table_data,
         colWidths=[doc.width*0.25, doc.width*0.25, doc.width*0.3, doc.width*0.2]
@@ -214,8 +237,8 @@ def build_report(filename):
         plt.plot(problem_data.index, problem_data[col], marker="o", label=col, color=color, linewidth=2)
 
     # Format Y-axis as integers (ensuring whole numbers only)
-    plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-
+    plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True, min_n_ticks=1))
+    plt.gca().set_ylim(bottom=0)  # Ensure Y-axis starts at zero
     # Set labels and title
     plt.title("Problem History", fontsize=14, fontweight='bold')
     plt.xlabel("Time")
@@ -275,17 +298,17 @@ def build_report(filename):
     api_cpu_usage = api_response.get("cpu_usage", {})
 
     # Define expected time slots for a 24-hour period (every 6 hours)
-    time_slots = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
+    time_slots_cpu_usage = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
     # Ensure all hosts have complete time slots (fill missing slots with 0s)
     formatted_cpu_usage = {}
     for host, values in api_cpu_usage.items():
-        while len(values) < len(time_slots):  # Ensure each host has 6 values
+        while len(values) < len(time_slots_cpu_usage):  # Ensure each host has 6 values
             values.append(0)
-        formatted_cpu_usage[host] = values[:len(time_slots)]  # Keep only 6 values
+        formatted_cpu_usage[host] = values[:len(time_slots_cpu_usage)]  # Keep only 6 values
 
     # Create DataFrame with correct structure
-    cpu_data_df = pd.DataFrame(formatted_cpu_usage, index=time_slots)
+    cpu_data_df = pd.DataFrame(formatted_cpu_usage, index=time_slots_cpu_usage)
 
     # Define chart filename
     cpu_chart = "cpu_load.png"
@@ -294,7 +317,8 @@ def build_report(filename):
     plt.figure(figsize=(7, 4), dpi=150)
     for col, color in zip(cpu_data_df.columns, ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]):
         plt.plot(cpu_data_df.index, cpu_data_df[col], marker="o", label=col, color=color, linewidth=2)
-
+    
+    plt.ylim(0, 80)  # Limit scale between 0% and 80%
     # Format Y-axis as percentage (0% - 100%)
     plt.gca().yaxis.set_major_locator(mticker.MultipleLocator(10))  # Steps of 10%
     plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))  # Format as %
@@ -357,16 +381,16 @@ def build_report(filename):
     api_web_downtime = api_response.get("web_downtime", {})
 
     # Define expected time slots for a 24-hour report (6-hour intervals)
-    time_slots = ["00:00 - 06:00", "06:00 - 12:00", "12:00 - 18:00", "18:00 - 00:00"]
+    time_slots_web_downtime = ["00:00 - 06:00", "06:00 - 12:00", "12:00 - 18:00", "18:00 - 00:00"]
 
     # Collect all unique web applications from API data
     all_apps = set(api_web_downtime.keys())
 
     # Ensure all expected apps are included (fill missing apps with zeros)
-    formatted_web_downtime = {app: api_web_downtime.get(app, [0] * len(time_slots)) for app in all_apps}
+    formatted_web_downtime = {app: api_web_downtime.get(app, [0] * len(time_slots_web_downtime)) for app in all_apps}
 
     # Create DataFrame with correct structure
-    web_downtime_data = pd.DataFrame(formatted_web_downtime, index=time_slots)
+    web_downtime_data = pd.DataFrame(formatted_web_downtime, index=time_slots_web_downtime)
 
     # Define chart filename
     web_downtime_chart = "web_downtime.png"
@@ -495,17 +519,17 @@ def build_report(filename):
     api_threats_history = api_response.get("threats_history", {})
 
     # Define expected time slots for a 24-hour period (every 4 hours)
-    time_slots = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
+    time_slots_threats_history = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
     # Ensure all threats have complete time slots (fill missing slots with 0s)
     formatted_threats_history = {}
     for threat, values in api_threats_history.items():
-        while len(values) < len(time_slots):  # Ensure each threat has 6 values
+        while len(values) < len( time_slots_threats_history):  # Ensure each threat has 6 values
             values.append(0)
-        formatted_threats_history[threat] = values[:len(time_slots)]  # Keep only 6 values
+        formatted_threats_history[threat] = values[:len(time_slots_threats_history)]  # Keep only 6 values
 
     # Create DataFrame with correct structure
-    threats_history_df = pd.DataFrame(formatted_threats_history, index=time_slots)
+    threats_history_df = pd.DataFrame(formatted_threats_history, index=time_slots_threats_history)
 
     # Define chart filename
     threats_chart = "threats_history.png"
@@ -520,7 +544,7 @@ def build_report(filename):
 
     # Set labels and title
     plt.title("Threats History", fontsize=14, fontweight='bold')
-    plt.xlabel("Time")
+    plt.xlabel("Last HIT")
     plt.ylabel("Count")
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.6)
@@ -542,4 +566,4 @@ def build_report(filename):
             os.remove(chart_file)
 
 if __name__ == "__main__":
-    build_report("Centralized_Monitoring_Report_Platypus.pdf")
+    build_report(filename)

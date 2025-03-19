@@ -24,7 +24,7 @@ def get_monitor_down_day():
         "query": {
             "bool": {
                 "must": [
-                    {"range": {"@timestamp": {"gte": "now-1d/d", "lte": "now"}}},
+                    {"range": {"@timestamp": {"gte": "now-24h", "lte": "now"}}},  # Past 24 hours
                     {"match_phrase": {"message": "Down"}}
                 ]
             }
@@ -57,7 +57,6 @@ def get_monitor_down_day():
             continue  # Skip this entry
 
         message = source.get("message", "")
-
         status = "Down" if "Down" in message else "Unknown"
 
         if "PING" in message and "packet loss" in message:
@@ -71,12 +70,13 @@ def get_monitor_down_day():
 
     return json.dumps({"web_issues": web_issues}, indent=4)
 
+
 def get_graph_down_day():
     query = {
         "query": {
             "bool": {
                 "must": [
-                    {"range": {"@timestamp": {"gte": "now-1d/d", "lte": "now"}}},
+                    {"range": {"@timestamp": {"gte": "now/d", "lte": "now"}}},  # Today from 00:00 to now
                     {"match_phrase": {"message": "Down"}}
                 ]
             }
@@ -99,6 +99,8 @@ def get_graph_down_day():
 
     data = response.json()
     hits = data.get("hits", {}).get("hits", [])
+
+    # Initialize web_downtime with zero counts for all time slots
     web_downtime = {monitor: [0, 0, 0, 0] for monitor in ALLOWED_MONITORS}
 
     for hit in hits:
@@ -124,9 +126,7 @@ def get_down_count_day():
     down_count = len(monitor_down_data.get("web_issues", []))
     return json.dumps({"Web Application": down_count}, indent=4)
 
-
-
-
-#print(get_monitor_down_day())
-#print(get_graph_down_day())
-print(get_down_count_day())
+#if __name__ == "__main__":
+    #print(get_monitor_down_day())
+    #print(get_graph_down_day())
+    #print(get_down_count_day())

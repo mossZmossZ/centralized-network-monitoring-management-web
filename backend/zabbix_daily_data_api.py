@@ -1,19 +1,20 @@
+from fastapi import APIRouter, HTTPException
 import os
 import requests
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from collections import defaultdict
-import json
+
 load_dotenv()
+
+router = APIRouter()
 
 ZABBIX_SERVER = os.getenv("ZABBIX_SERVER")
 ZABBIX_API_TOKEN = os.getenv("ZABBIX_API_TOKEN")
 ZABBIX_API_URL = f"{ZABBIX_SERVER}/api_jsonrpc.php"
 
-
 time_slots = [0, 4, 8, 12, 16, 20]
 time_slots_cpu = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
-
 
 category_map = {
     "Link Down": ["link down"],
@@ -21,29 +22,48 @@ category_map = {
     "Port Failure": ["port failure", "interface failure", "port issue"]
 }
 
-def get_discovered_hosts_group_id():
-    headers = {
+def extract_problem_type(description):
+    problem_keywords = [
+        "link down", "speed change", "disk full", "high memory usage",
+        "cpu high", "icmp unreachable", "no snmp data collection",
+        "power supply warning", "temperature warning"
+    ]
+
+    for keyword in problem_keywords:
+        if keyword in description.lower():
+            return keyword.title()
+
+    return "Other Issue"
+
+def get_cpu_itemid(host_id):
+    HEADERS = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
     }
+
     payload = {
         "jsonrpc": "2.0",
-        "method": "hostgroup.get",
+        "method": "item.get",
         "params": {
-            "output": ["groupid"],
-            "filter": {"name": ["Discovered hosts"]}
+            "output": ["itemid", "key_"],
+            "hostids": host_id,
+            "search": {"key_": "system.cpu.util"},
+            "sortfield": "name"
         },
-        "auth": None,
         "id": 1
     }
-    response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
+
+    response = requests.post(ZABBIX_API_URL, json=payload, headers=HEADERS)
     data = response.json()
+
     if "error" in data:
-        print("Error fetching host group:", data["error"])
+        print("❌ Error fetching CPU item:", data["error"])
         return None
-    groups = data.get("result", [])
-    if groups:
-        return groups[0]["groupid"]  
+
+    for item in data.get("result", []):
+        if item.get("key_") == "system.cpu.util":
+            return item["itemid"]
+
     return None
 
 def get_Zabbix_servers_group_id():
@@ -64,26 +84,50 @@ def get_Zabbix_servers_group_id():
     response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
     data = response.json()
     if "error" in data:
-        print("Error fetching host group:", data["error"])
         return None
     groups = data.get("result", [])
     if groups:
-        return groups[0]["groupid"] 
+        return groups[0]["groupid"]
     return None
 
+def get_discovered_hosts_group_id():
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
+    }
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "hostgroup.get",
+        "params": {
+            "output": ["groupid"],
+            "filter": {"name": ["Discovered hosts"]}
+        },
+        "auth": None,
+        "id": 1
+    }
+    response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
+    data = response.json()
+    if "error" in data:
+        return None
+    groups = data.get("result", [])
+    if groups:
+        return groups[0]["groupid"]
+    return None
 
+@router.get("/today_server_problem")
 def get_today_server_problem():
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
-        print("Could not find 'Zabbix servers' group.")
-        return []
+        raise HTTPException(status_code=404, detail="Could not find 'Zabbix servers' group.")
+    
     now = datetime.now()
-    start_of_today = datetime(now.year, now.month, now.day, 0, 0)  
-    time_from = int(start_of_today.timestamp())  
-    time_to = int(now.timestamp())  
-    HEADERS = {
+    start_of_today = datetime(now.year, now.month, now.day, 0, 0)
+    time_from = int(start_of_today.timestamp())
+    time_to = int(now.timestamp())
+
+    headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"  
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
     }
     payload = {
         "jsonrpc": "2.0",
@@ -92,27 +136,28 @@ def get_today_server_problem():
             "output": ["clock", "name", "objectid"],
             "selectHosts": ["host"],
             "selectAlerts": ["message"],
-            "groupids": [group_id],  # Filter events by Zabbix Servers group
-            "source": 0,  
-            "value": 1,   
+            "groupids": [group_id],
+            "source": 0,
+            "value": 1,
             "time_from": time_from,
             "time_till": time_to,
             "sortfield": ["clock"],
             "sortorder": "DESC",
-            "limit": 500  
+            "limit": 500
         },
         "auth": None,
         "id": 1
     }
-    response = requests.post(ZABBIX_API_URL, json=payload, headers=HEADERS)
+
+    response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
     data = response.json()
     if "error" in data:
-        print("Error:", data["error"])
-        return []
+        raise HTTPException(status_code=500, detail=data["error"])
+
     server_issues = []
     for issue in data.get("result", []):
         timestamp = datetime.fromtimestamp(int(issue["clock"]))
-        formatted_time = timestamp.strftime("%Y-%m-%d %I:%M:%S %p") 
+        formatted_time = timestamp.strftime("%Y-%m-%d %I:%M:%S %p")
         host = issue["hosts"][0]["host"] if "hosts" in issue and issue["hosts"] else "Unknown"
         full_problem_description = issue.get("name", "Unknown Issue")
         problem_type = extract_problem_type(full_problem_description)
@@ -125,38 +170,23 @@ def get_today_server_problem():
 
         server_issues.append([formatted_time, host, problem_type, duration_str])
 
-    return {"os_issues": server_issues}  
+    return {"os_issues": server_issues}
 
-def extract_problem_type(description):
-    problem_keywords = [
-        "link down", "speed change", "disk full", "high memory usage",
-        "cpu high", "icmp unreachable", "no snmp data collection",
-        "power supply warning", "temperature warning"
-    ]
-
-    for keyword in problem_keywords:
-        if keyword in description.lower():
-            return keyword.title()  
-
-    return "Other Issue"
-
-
+@router.get("/today_zabbix_problem")
 def get_today_zabbix_problem():
     group_id = get_discovered_hosts_group_id()
     if not group_id:
-        print("Could not find 'Discovered Hosts' group.")
-        return []
+        raise HTTPException(status_code=404, detail="Could not find 'Discovered Hosts' group.")
 
     now = datetime.now()
-    start_of_today = datetime(now.year, now.month, now.day, 0, 0)  
-    time_from = int(start_of_today.timestamp())  
-    time_to = int(now.timestamp())  
+    start_of_today = datetime(now.year, now.month, now.day, 0, 0)
+    time_from = int(start_of_today.timestamp())
+    time_to = int(now.timestamp())
 
-    HEADERS = {
+    headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"  
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
     }
-
     payload = {
         "jsonrpc": "2.0",
         "method": "event.get",
@@ -164,33 +194,31 @@ def get_today_zabbix_problem():
             "output": ["clock", "name", "objectid"],
             "selectHosts": ["host"],
             "selectAlerts": ["message"],
-            "groupids": [group_id],  # Filter events by Discovered Hosts group
-            "source": 0,  
-            "value": 1,   
+            "groupids": [group_id],
+            "source": 0,
+            "value": 1,
             "time_from": time_from,
             "time_till": time_to,
             "sortfield": ["clock"],
             "sortorder": "DESC",
-            "limit": 500  
+            "limit": 500
         },
         "auth": None,
         "id": 1
     }
 
-    response = requests.post(ZABBIX_API_URL, json=payload, headers=HEADERS)
+    response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
     data = response.json()
 
     if "error" in data:
-        print("Error:", data["error"])
-        return []
+        raise HTTPException(status_code=500, detail=data["error"])
 
     network_issues = []
     for issue in data.get("result", []):
         timestamp = datetime.fromtimestamp(int(issue["clock"]))
-        formatted_time = timestamp.strftime("%Y-%m-%d %I:%M:%S %p")  
+        formatted_time = timestamp.strftime("%Y-%m-%d %I:%M:%S %p")
 
         host = issue["hosts"][0]["host"] if "hosts" in issue and issue["hosts"] else "Unknown"
-
         full_problem_description = issue.get("name", "Unknown Issue")
 
         problem_type = "Other Issue"
@@ -207,8 +235,9 @@ def get_today_zabbix_problem():
 
         network_issues.append([formatted_time, host, problem_type, duration_str])
 
-    return {"network_issues": network_issues}  
+    return {"network_issues": network_issues}
 
+@router.get("/today_problem_graph")
 def get_problem_graph():
     raw_issues_data = get_today_zabbix_problem()  
     raw_issues = raw_issues_data["network_issues"]  
@@ -229,6 +258,7 @@ def get_problem_graph():
                 break
     return {"problem_history": dict(problem_history)}  
 
+@router.get("/count_today_server_problems")
 def count_today_problems():
     
     raw_issues_data = get_today_zabbix_problem() 
@@ -238,6 +268,7 @@ def count_today_problems():
 
     return total_problems
 
+@router.get("/count_today_server_problems")
 def count_today_server_problems():
    
     raw_issues_data = get_today_server_problem()  # Fetch today's problem data
@@ -247,6 +278,7 @@ def count_today_server_problems():
 
     return total_server_problems
 
+@router.get("/today_cpu_usage")
 def get_today_cpu_usage():
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
@@ -371,13 +403,3 @@ def get_cpu_itemid(host_id):
             return item["itemid"]
 
     return None
-
-if __name__ == "__main__":
-    #problem_data = get_problem_graph()  # Fetch problem history for today
-    #print(problem_data)  # Print final structured data
-    #print(get_today_zabbix_problem())
-    #print(count_today_problems())
-    #print(get_today_server_problem())
-    #print(count_today_server_problems())
-    print(get_today_cpu_usage())
-    #print(get_all_cpu_items(10084))

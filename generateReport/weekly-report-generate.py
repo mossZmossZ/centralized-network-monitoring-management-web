@@ -302,6 +302,7 @@ def build_report(filename):
     for col, color in zip(cpu_data_df.columns, ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]):
         plt.plot(cpu_data_df.index, cpu_data_df[col], marker="o", label=col, color=color, linewidth=2)
 
+    plt.ylim(0, 80)  # Limit scale between 0% and 80%
     # Format Y-axis as percentage (0% - 100%)
     plt.gca().yaxis.set_major_locator(mticker.MultipleLocator(10))  # Steps of 10%
     plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100))  # Format as %
