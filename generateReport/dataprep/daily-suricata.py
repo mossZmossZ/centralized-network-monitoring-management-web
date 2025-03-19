@@ -4,19 +4,14 @@ import json
 from datetime import datetime, timedelta, timezone
 from dateutil import parser
 from dotenv import load_dotenv
-
-# Load environment variables
 load_dotenv()
 
-# OpenSearch configuration
 OPENSEARCH_URL = os.getenv("OPENSEARCH_URL")
 OPENSEARCH_SURICATA_INDEX = os.getenv("OPENSEARCH_SURICATA_INDEX")
 
 TIME_SLOTS = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
 def fetch_suricata_alerts():
-    """Fetch Suricata alerts from OpenSearch in the last 24 hours."""
-    
     url = f"{OPENSEARCH_URL}/{OPENSEARCH_SURICATA_INDEX}/_search"
     
     now = datetime.now(timezone.utc)
@@ -61,7 +56,6 @@ def fetch_suricata_alerts():
     return alerts
 
 def extract_short_signature(signature):
-    """Extract the main keywords from the signature."""
     keywords = ["Port Scan", "DROP Listed", "SSH Scan", "Compromised", "Malware", "Dshield"]
     for word in keywords:
         if word in signature:
@@ -69,8 +63,6 @@ def extract_short_signature(signature):
     return signature.split()[0]  # Default: use the first word if no match
 
 def get_threat_summary():
-    """Aggregate threats, count occurrences, and store the last hit timestamp."""
-    
     alerts = fetch_suricata_alerts()
     threat_data = {}
 
@@ -95,10 +87,8 @@ def get_threat_summary():
     return {"threats_detected": top_10_threats}
 
 def get_graph_threats():
-    """Generate threat history grouped into 6 time slots, using top 3 threats."""
-
     alerts = fetch_suricata_alerts()
-    threat_counts = {sig: [0] * len(TIME_SLOTS) for sig in []}  # Ensures correct structure
+    threat_counts = {sig: [0] * len(TIME_SLOTS) for sig in []}  
 
     for timestamp, signature, sig_id in alerts:
         short_signature = extract_short_signature(signature)
@@ -116,19 +106,15 @@ def get_graph_threats():
 
         threat_counts[short_signature][closest_slot_index] += 1
 
-    # Get total counts for ranking
     total_counts = {sig: sum(counts) for sig, counts in threat_counts.items()}
 
-    # Sort and get top 3 threats
     top_3_threats = sorted(total_counts.items(), key=lambda x: x[1], reverse=True)[:3]
     top_3_signatures = {sig for sig, _ in top_3_threats}
 
-    # Filter only top 3 threats
     final_threats = {sig: threat_counts[sig] for sig in top_3_signatures}
 
     return {"threats_history": final_threats}  
 
-# Run the functions and print the results
 if __name__ == "__main__":
     print(get_threat_summary())
     print(get_graph_threats())  
