@@ -35,9 +35,9 @@ api_response = {
     ],
 
     "web_downtime": {
-        "ECE ENG": [3, 4, 5, 7,6,7,1],
-        "ECC ENG": [2,4,5,6,5,6,1],
-        "KMUTNB" :[1,2,4,5,5,4,1]
+        "ECE ENG": [3, 4, 5, 7,6,7],
+        "ECC ENG": [2,4,5,6,5,6],
+        "KMUTNB" :[1,2,4,5,5,4]
     },
  
     "incident_summary": {
@@ -200,7 +200,7 @@ def build_report(filename):
     api_problem_history = api_response.get("problem_history", {})
 
     # Define expected time slots for a 24-hour period (every 4 hours)
-    time_slots = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
 
     # Ensure all problem types have complete time slots (fill missing slots with 0s)
     formatted_problem_history = {}
@@ -282,8 +282,7 @@ def build_report(filename):
     api_cpu_usage = api_response.get("cpu_usage", {})
 
     # Define expected time slots for a 24-hour period (every 6 hours)
-    time_slots_cpu = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
-
+    time_slots_cpu = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
     # Ensure all hosts have complete time slots (fill missing slots with 0s)
     formatted_cpu_usage = {}
     for host, values in api_cpu_usage.items():
@@ -364,7 +363,7 @@ def build_report(filename):
     api_web_downtime = api_response.get("web_downtime", {})
 
     # Define expected time slots for a 24-hour report (6-hour intervals)
-    time_slots_web = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots_web = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
 
     # Collect all unique web applications from API data
     all_apps = set(api_web_downtime.keys())
@@ -502,7 +501,7 @@ def build_report(filename):
     api_threats_history = api_response.get("threats_history", {})
 
     # Define expected time slots for a 24-hour period (every 4 hours)
-    time_slots_threats = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots_threats = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
 
     # Ensure all threats have complete time slots (fill missing slots with 0s)
     formatted_threats_history = {}
@@ -550,4 +549,4 @@ def build_report(filename):
             os.remove(chart_file)
 
 if __name__ == "__main__":
-    build_report("Centralized_Monitoring_Report_Weekly.pdf")
+    build_report("Centralized_Monitoring_Report_monthly.pdf")
