@@ -1,4 +1,5 @@
 import os
+import json
 import pandas as pd
 import matplotlib.pyplot as plt
 from reportlab.lib.pagesizes import A4
@@ -10,6 +11,13 @@ from reportlab.platypus import (
     BaseDocTemplate, PageTemplate, Frame,
     Paragraph, Spacer, Image, Table, TableStyle
 )
+
+from monthly_uptimekuma import get_down_count_month,get_graph_down_month,get_monitor_down_month
+
+uptime_web_issue = json.loads(get_monitor_down_month())
+uptime_web_downtime = json.loads(get_graph_down_month())
+uptime_count_day = json.loads(get_down_count_month())
+
 api_response = {
     "report_date": "2025-03-16",
     "data_range": "2025-03-15 13:00 -- 2025-03-16 12:59 GMT+7",
@@ -29,16 +37,9 @@ api_response = {
         "Host2": [25, 60, 48, 78,50,60]
     },
 
-    "web_issues": [
-        ["2025-03-11 11:06:28", "ECE ENG", "Down", "Request failed with status code 500"],
-        ["2025-03-11 11:06:28", "ECE ENG", "Down", "Request failed with status code 500"]
-    ],
+    "web_issues": uptime_web_issue.get("web_issues", []),
 
-    "web_downtime": {
-        "ECE ENG": [3, 4, 5, 7,6,7,1],
-        "ECC ENG": [2,4,5,6,5,6,1],
-        "KMUTNB" :[1,2,4,5,5,4,1]
-    },
+    "web_downtime": uptime_web_downtime.get("web_downtime", []),
  
     "incident_summary": {
         "Network Devices": 15,
@@ -76,14 +77,14 @@ def header_footer(canvas, doc):
     # ---------------- HEADER ----------------
     canvas.setFont("Helvetica-Bold", 12)
     # Left-aligned: Report title
-    canvas.drawString(doc.leftMargin, page_height - 50, "Centralized Monitoring Weekly Report")
+    canvas.drawString(doc.leftMargin, page_height - 50, "Centralized Monitoring Monthly Report")
     # Right-aligned: Page number
     page_number = f"Page {doc.page}"
     canvas.drawRightString(page_width - doc.rightMargin, page_height - 50, page_number)
 
     # ---------------- FOOTER ----------------
     canvas.setFont("Helvetica", 10)
-    canvas.drawString(doc.leftMargin, footer_y, "Centralized Monitoring Daily Report")
+    canvas.drawString(doc.leftMargin, footer_y, "Centralized Monitoring Monthly Report")
     canvas.setFont("Helvetica-Bold", 10)
     canvas.setFillColor(colors.red)
     canvas.drawCentredString(page_width / 2, footer_y, "Confidential for internal use")
@@ -153,7 +154,7 @@ def build_report(filename):
     # B) TITLE PAGE-LIKE CONTENT
     ###########################################################################
     # TITLE PAGE - Dynamically Insert Report Date & Data Range
-    story.append(Paragraph("Centralized Monitoring Daily Report", styles["Title"]))
+    story.append(Paragraph("Centralized Monitoring Monthly Report", styles["Title"]))
     story.append(Spacer(1, 0.2*inch))
 
     # Fetch report date and data range from API response
@@ -173,7 +174,7 @@ def build_report(filename):
 
     # Fetch network issues data from API response
     network_issues_data = api_response.get("network_issues", [])
-    network_table_data = [["Time", "Host", "Problem", "Duration"]] + network_issues_data
+    network_table_data = [["Last problem", "Host", "Problem", "Count"]] + network_issues_data
     t_network = Table(
         network_table_data,
         colWidths=[doc.width*0.25, doc.width*0.25, doc.width*0.3, doc.width*0.2]
@@ -200,7 +201,7 @@ def build_report(filename):
     api_problem_history = api_response.get("problem_history", {})
 
     # Define expected time slots for a 24-hour period (every 4 hours)
-    time_slots = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
 
     # Ensure all problem types have complete time slots (fill missing slots with 0s)
     formatted_problem_history = {}
@@ -282,8 +283,7 @@ def build_report(filename):
     api_cpu_usage = api_response.get("cpu_usage", {})
 
     # Define expected time slots for a 24-hour period (every 6 hours)
-    time_slots_cpu = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
-
+    time_slots_cpu = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
     # Ensure all hosts have complete time slots (fill missing slots with 0s)
     formatted_cpu_usage = {}
     for host, values in api_cpu_usage.items():
@@ -365,7 +365,7 @@ def build_report(filename):
     api_web_downtime = api_response.get("web_downtime", {})
 
     # Define expected time slots for a 24-hour report (6-hour intervals)
-    time_slots_web = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots_web = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
 
     # Collect all unique web applications from API data
     all_apps = set(api_web_downtime.keys())
@@ -503,7 +503,7 @@ def build_report(filename):
     api_threats_history = api_response.get("threats_history", {})
 
     # Define expected time slots for a 24-hour period (every 4 hours)
-    time_slots_threats = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots_threats = ["01-05","06-10", "11-15", "16-20", "21-25", "26-31"]
 
     # Ensure all threats have complete time slots (fill missing slots with 0s)
     formatted_threats_history = {}
@@ -551,4 +551,4 @@ def build_report(filename):
             os.remove(chart_file)
 
 if __name__ == "__main__":
-    build_report("Centralized_Monitoring_Report_Weekly.pdf")
+    build_report("Centralized_Monitoring_Report_monthly.pdf")

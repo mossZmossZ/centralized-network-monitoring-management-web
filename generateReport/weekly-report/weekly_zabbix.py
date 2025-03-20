@@ -10,8 +10,8 @@ ZABBIX_API_TOKEN = os.getenv("ZABBIX_API_TOKEN")
 ZABBIX_API_URL = f"{ZABBIX_SERVER}/api_jsonrpc.php"
 
 
-time_slots = [0, 4, 8, 12, 16, 20]
-time_slots_cpu = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
+time_slots = [0, 1, 2, 3, 4, 5, 6]  # 0 = Monday, 6 = Sunday
+time_slots_cpu = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
 category_map = {
@@ -71,16 +71,16 @@ def get_Zabbix_servers_group_id():
     return None
 
 
-def get_today_server_problem():
+def get_week_server_problem():
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
-        print("Could not find 'Zabbix servers' group.")
+        print("Could not find 'Discovered Hosts' group.")
         return []
-    
+
     now = datetime.now()
-    past_24h = now - timedelta(hours=24)  # Exact past 24 hours
-    
-    time_from = int(past_24h.timestamp())  
+    past_7d = now - timedelta(days=7)
+
+    time_from = int(past_7d.timestamp())  
     time_to = int(now.timestamp())  
 
     HEADERS = {
@@ -97,12 +97,12 @@ def get_today_server_problem():
             "selectAlerts": ["message"],
             "groupids": [group_id],  
             "source": 0,  
-            "value": 1,   
+            "value": 1,  
             "time_from": time_from,
             "time_till": time_to,
             "sortfield": ["clock"],
             "sortorder": "DESC",
-            "limit": 500  
+            "limit": 1000  # อาจเพิ่ม limit เพราะดึงข้อมูล 7 วัน
         },
         "auth": None,
         "id": 1
@@ -149,7 +149,7 @@ def extract_problem_type(description):
 
     return "Other Issue"
 
-def get_today_zabbix_problem():
+def get_week_zabbix_problem():
     """Fetch Zabbix problems from the past 24 hours with a 24-hour format."""
     
     group_id = get_discovered_hosts_group_id()
@@ -158,9 +158,9 @@ def get_today_zabbix_problem():
         return []
 
     now = datetime.now()
-    past_24h = now - timedelta(days=1)  # Get time 24 hours ago
+    past_week = now - timedelta(days=7)
 
-    time_from = int(past_24h.timestamp())  
+    time_from = int(past_week.timestamp())  
     time_to = int(now.timestamp())  
 
     HEADERS = {
@@ -231,7 +231,7 @@ def get_today_zabbix_problem():
 
 
 def get_problem_graph():
-    raw_issues_data = get_today_zabbix_problem()  # Fetch issues
+    raw_issues_data = get_week_zabbix_problem()  # Fetch issues
     raw_issues = raw_issues_data.get("network_issues", [])  
 
     now = datetime.now()
@@ -267,7 +267,7 @@ def get_problem_graph():
 
 
 def count_today_problems():
-    raw_issues_data = get_today_zabbix_problem()
+    raw_issues_data = get_week_zabbix_problem()
     raw_issues = raw_issues_data.get("network_issues", [])
 
     total_problems = sum(issue[3] for issue in raw_issues)  # Summing the count column
@@ -276,14 +276,14 @@ def count_today_problems():
 
 def count_today_server_problems():
    
-    raw_issues_data = get_today_server_problem()  # Fetch today's problem data
+    raw_issues_data = get_week_server_problem()  # Fetch today's problem data
     raw_issues = raw_issues_data["os_issues"]  
 
     total_server_problems = len(raw_issues)
 
     return total_server_problems
 
-def get_today_cpu_usage():
+def get_week_cpu_usage():
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
         print("❌ Could not find 'Zabbix Servers' group.")
@@ -314,13 +314,13 @@ def get_today_cpu_usage():
     hosts = {host["hostid"]: host["name"] for host in data_hosts.get("result", [])}
 
     now = datetime.now()
-    today_midnight = now.replace(hour=0, minute=0, second=0)  # Start of today
+    start_of_week = now - timedelta(days=6)  # 7 วันก่อนหน้า (รวมวันนี้ด้วย)
 
-    # Generate time slots from 00:00 to now (hourly)
-    time_slots_cpu = [today_midnight + timedelta(hours=i) for i in range(now.hour + 1)]
-    time_slots_str = [ts.strftime("%H:%M") for ts in time_slots_cpu]  # Format time slot labels
+    # สร้าง Time Slots เป็นรายวัน
+    time_slots_cpu = [start_of_week + timedelta(days=i) for i in range(7)]
+    time_slots_str = [ts.strftime("%Y-%m-%d") for ts in time_slots_cpu]  # Format วันที่เป็น YYYY-MM-DD
 
-    cpu_usage = defaultdict(lambda: [0] * len(time_slots_str))  # Default all slots to 0
+    cpu_usage = defaultdict(lambda: [0] * len(time_slots_str))  # กำหนดค่าเริ่มต้นเป็น 0
 
     for host_id, host_name in hosts.items():
         item_id = get_cpu_itemid(host_id)
@@ -333,15 +333,21 @@ def get_today_cpu_usage():
             print(f"⚠️ Warning: No CPU data found for {host_name}.")
             continue
 
+        # ดึงค่าจาก API และแปลงเป็น dict {วันที่: ค่าเฉลี่ย CPU}
         cpu_values = {
-            datetime.fromtimestamp(int(entry["clock"])).strftime("%H:%M"): round(float(entry["value"]), 2)
+            datetime.fromtimestamp(int(entry["clock"])).strftime("%Y-%m-%d"): round(float(entry["value"]), 2)
             for entry in cpu_data
         }
 
         aligned_values = []
         for ts in time_slots_str:
-            closest_time = min(cpu_values.keys(), key=lambda t: abs(datetime.strptime(t, "%H:%M") - datetime.strptime(ts, "%H:%M"))) if cpu_values else None
-            aligned_values.append(int(cpu_values.get(closest_time, 0)))  # Default to 0 if missing
+            # ค้นหาวันที่ที่ใกล้เคียงที่สุด
+            closest_time = min(
+                cpu_values.keys(),
+                key=lambda t: abs(datetime.strptime(t, "%Y-%m-%d") - datetime.strptime(ts, "%Y-%m-%d"))
+            ) if cpu_values else None
+
+            aligned_values.append(cpu_values.get(closest_time, 0))  # ถ้าไม่มีค่าให้เป็น 0
 
         cpu_usage[host_name] = aligned_values
 
@@ -414,11 +420,11 @@ def get_cpu_itemid(host_id):
     return None
 
 if __name__ == "__main__":
-    # problem_data = get_problem_graph()  # Fetch problem history for today
-    # print(problem_data)  # Print final structured data
-    # print(get_today_zabbix_problem())
-    # print(count_today_problems())
-    print(get_today_server_problem())
+    #problem_data = get_problem_graph()  # Fetch problem history for today
+    #print(problem_data)  # Print final structured data
+    #print(get_week_zabbix_problem())
+    #print(count_today_problems())
+    print(get_week_server_problem())
     print(count_today_server_problems())
-    #print(get_today_cpu_usage())
+    #print(get_week_cpu_usage())
     #print(get_all_cpu_items(10084))
