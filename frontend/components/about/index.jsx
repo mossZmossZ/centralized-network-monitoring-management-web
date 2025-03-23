@@ -25,7 +25,7 @@ export function About() {
       <h1 className="text-4xl font-bold text-gray-800 mb-6">About Us</h1>
       <p className="text-lg text-center text-gray-600 max-w-2xl">
         Our <span className="font-semibold">Centralized Network Monitoring Management System</span> 
-        is designed for seamless and efficient network, server, and environmental monitoring. 
+        &nbsp;is designed for seamless and efficient network, server, and environmental monitoring. 
         Developed by a dedicated team under expert guidance, it ensures real-time performance tracking, 
         security, and reliability.
       </p>

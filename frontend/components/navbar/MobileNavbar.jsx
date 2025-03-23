@@ -37,12 +37,9 @@ export default function MobileNavbar() {
             <li><button onClick={() => handleMobileNavigation("/maintenance")}>Maintenance</button></li>
             <li><button onClick={() => handleMobileNavigation("/report")}>Report</button></li>
             <li><button onClick={() => handleMobileNavigation("/alert")}>Alert</button></li>
-            <li><button onClick={() => handleMobileNavigation("/systems")}>System</button></li>
+            <li><button onClick={() => handleMobileNavigation("/services")}>Services</button></li>
             <li><button onClick={() => handleMobileNavigation("/setting")}>Setting</button></li>
             
-            {/* Feature Section */}
-            <li className="font-bold">Feature</li>
-            <li><button onClick={() => handleMobileNavigation("/docs")}>Password leak</button></li>
             
             {/* Menu Section */}
             <li className="font-bold">Menu</li>

@@ -29,7 +29,7 @@ export default function Main() {
         </Link>
 
         {/* System Management Card */}
-        <Link to="/systems" className="card bg-base-200 shadow-md p-6 hover:shadow-lg hover:scale-105 transition-transform">
+        <Link to="/setting" className="card bg-base-200 shadow-md p-6 hover:shadow-lg hover:scale-105 transition-transform">
           <h2 className="text-xl font-semibold">System Management</h2>
           <p className="text-gray-500">Edit configuration files, start stop restart services, and monitor system status with up down logs for seamless network operations.</p>
         </Link>

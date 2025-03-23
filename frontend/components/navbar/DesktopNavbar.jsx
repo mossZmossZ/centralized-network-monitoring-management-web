@@ -29,19 +29,8 @@ export default function DesktopNavbar({ closeDropdowns }) {
         <li><Link to="/maintenance">Maintenance</Link></li>
         <li><Link to="/report">Report</Link></li>
         <li><Link to="/alert">Alert</Link></li>
-        <li><Link to="/systems">System</Link></li>
+        <li><Link to="/services">Services</Link></li>
         <li><Link to="/setting">Setting</Link></li>
-
-        {/* Feature Dropdown */}
-        <li>
-          <details ref={featureRef}>
-            <summary>Feature</summary>
-            <ul className="absolute z-50 bg-white/50 backdrop-blur-md border border-gray-300 rounded-lg p-2">
-              <li><Link to="/docs" onClick={closeDropdowns}>Password leak</Link></li>
-            </ul>
-          </details>
-        </li>
-
         {/* Menu Dropdown */}
         <li>
           <details ref={menuRef}>

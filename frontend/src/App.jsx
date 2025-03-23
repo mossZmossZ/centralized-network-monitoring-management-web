@@ -5,7 +5,7 @@ import Main from "../components/main/index.jsx";
 import { Report } from "../components/report/index.jsx";
 import { About } from "../components/about/index.jsx";
 import { Alert } from "../components/alert/index.jsx";
-import { Systems } from "../components/systems/index.jsx";
+import { Services } from "../components/Services/index.jsx";
 import { Setting } from "../components/settings/index.jsx";
 import { User } from "../components/user/index.jsx";
 import DocsIndex from "../components/docs/DocsIndex.jsx";
@@ -23,7 +23,7 @@ export default function App() {
             <Route path="/about" element={<About />} />
             <Route path="/report" element={<Report />} />
             <Route path="/alert" element={<Alert />} />
-            <Route path="/systems" element={<Systems />} />
+            <Route path="/services" element={<Services />} />
             <Route path="/setting" element={<Setting />} />
             <Route path="/user" element={<User />} />
             <Route path="/docs" element={<DocsIndex />} />
