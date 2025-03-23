@@ -4,10 +4,17 @@ import Swal from "sweetalert2";
 
 export function GenerateReportModal({ setIsGenerateModalOpen }) {
   const [reportType, setReportType] = useState("Daily-Report");
-  const [date, setDate] = useState("");  // New state for the date input
 
   // Handle the report generation
-  const handleGenerateReport = async () => {
+  const handleGenerateReport = async (e) => {
+    // Prevent any default action, in case it's coming from a form submit
+    e.preventDefault();
+  
+    // Get today's date adjusted to GMT+7 (Thailand Time Zone)
+    const today = new Date();
+    const options = { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" };
+    const todayDate = today.toLocaleDateString("en-GB", options).split("/").reverse().join("-");  // Format as YYYY-MM-DD
+  
     // Show SweetAlert2 confirmation dialog
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -17,7 +24,7 @@ export function GenerateReportModal({ setIsGenerateModalOpen }) {
       confirmButtonText: "Yes, generate it!",
       cancelButtonText: "Cancel",
     });
-
+  
     if (result.isConfirmed) {
       try {
         // Show loading spinner using SweetAlert2
@@ -30,7 +37,7 @@ export function GenerateReportModal({ setIsGenerateModalOpen }) {
             Swal.showLoading();  // Show loading spinner
           },
         });
-
+  
         // Determine the correct API endpoint based on the selected report type
         let apiUrl = "";
         if (reportType === "Daily-Report") {
@@ -40,15 +47,18 @@ export function GenerateReportModal({ setIsGenerateModalOpen }) {
         } else if (reportType === "Monthly-Report") {
           apiUrl = "http://localhost:8000/custom-monthly-report";
         }
-
+  
         // Send Axios request to generate the report
         const response = await axios.post(apiUrl, {
-          date: date,  // Send the date entered in the input field
+          date: todayDate,  // Send today's date as the date (in GMT+7 timezone)
         });
-
+  
         // Close the loading spinner and show success message
         Swal.close();  // Close the loading spinner
         Swal.fire("Success!", `${response.data.message}`, "success");
+  
+        // Refresh the page after the report is generated
+        window.location.reload();  // Refresh the page
 
         // Close the modal
         setIsGenerateModalOpen(false);
@@ -75,14 +85,6 @@ export function GenerateReportModal({ setIsGenerateModalOpen }) {
           <option value="Weekly-Report">Weekly Report</option>
           <option value="Monthly-Report">Monthly Report</option>
         </select>
-
-        {/* Input field for the date */}
-        <input
-          type="date"
-          className="input input-bordered w-full mb-4"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}  // Update the date state
-        />
 
         <div className="flex justify-end space-x-4">
           {/* Close Button */}

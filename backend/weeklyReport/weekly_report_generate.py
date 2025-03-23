@@ -14,10 +14,10 @@ from reportlab.platypus import (
 from datetime import datetime, timedelta
 from reportlab.lib import colors
 # Import your existing function
-from weekly_zabbix import get_week_zabbix_problem,get_problem_graph,get_week_server_problem,get_week_cpu_usage
-from weekly_zabbix import count_today_problems,count_today_server_problems
-from weekly_uptimekuma import get_down_count_week,get_graph_down_week,get_monitor_down_week
-from weekly_suricata import get_graph_threats,get_threat_summary
+from .weekly_zabbix import get_week_zabbix_problem,get_problem_graph,get_week_server_problem,get_week_cpu_usage
+from .weekly_zabbix import count_today_problems,count_today_server_problems
+from .weekly_uptimekuma import get_down_count_week,get_graph_down_week,get_monitor_down_week
+from .weekly_suricata import get_graph_threats,get_threat_summary
 
 zabbix_network_issues = get_week_zabbix_problem()
 zabbix_problem_history = get_problem_graph()
@@ -556,6 +556,3 @@ def build_report(filename):
     for chart_file in chart_files:
         if os.path.exists(chart_file):
             os.remove(chart_file)
-
-if __name__ == "__main__":
-    build_report("Centralized_Monitoring_Report_Weekly.pdf")

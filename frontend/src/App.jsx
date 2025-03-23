@@ -31,8 +31,12 @@ export default function App() {
             <Route path="/maintenance" element={<Maintenance />} />
           </Routes>
         </div>
+        {/* Footer should always stick to the bottom */}
         <Footer />
       </div>
     </Router>
   );
 }
+
+
+

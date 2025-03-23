@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 from report_api import router as report_router
 from file_manager import router as file_manager_router
 from alert_gateway import router as alert_router
-from customDailyreportAPI import router as custom_report_router  # Import from the same level
-
+from customDailyreportAPI import router as custom_daily_report_router  # Import from the same level
+from customWeeklyreportAPI import router as custom_weekly_report_router
 # Load environment variables
 load_dotenv()
 
@@ -22,8 +22,7 @@ app = FastAPI()
 # CORS middleware setup
 app.add_middleware(
     CORSMiddleware,
-    #allow_origins=["http://localhost:5173"],
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,8 +37,6 @@ async def debug_path():
 app.include_router(report_router)
 app.include_router(file_manager_router)
 app.include_router(alert_router)
-app.include_router(custom_report_router)  # Include the custom report router
+app.include_router(custom_daily_report_router)  # Include the custom report router
+app.include_router(custom_weekly_report_router)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)

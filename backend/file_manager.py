@@ -1,29 +1,49 @@
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
 import os
+from fastapi import APIRouter
+from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException
+router = APIRouter()
 
-router = APIRouter(prefix="/api/files", tags=["files"])
+# Define the directories for daily, weekly, and monthly reports
+REPORTS_BASE_PATH = "generated_reports/custom_report"
 
-GENERATED_REPORTS_DIR = "generated_reports"
-os.makedirs(GENERATED_REPORTS_DIR, exist_ok=True)
+def list_files_in_directory(directory):
+    """Utility function to list files in a given directory."""
+    files = []
+    if os.path.exists(directory):
+        files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+    return files
 
+@router.get("/api/files")
+async def get_files():
+    """Endpoint to return the files categorized by daily, weekly, and monthly."""
+    daily_files = list_files_in_directory(os.path.join(REPORTS_BASE_PATH, "daily"))
+    weekly_files = list_files_in_directory(os.path.join(REPORTS_BASE_PATH, "weekly"))
+    monthly_files = list_files_in_directory(os.path.join(REPORTS_BASE_PATH, "monthly"))
 
-@router.get("/")
-async def list_files():
-    return os.listdir(GENERATED_REPORTS_DIR)
+    return {
+        "daily": daily_files,
+        "weekly": weekly_files,
+        "monthly": monthly_files
+    }
 
-
-@router.get("/download/{filename}")
-async def download_file(filename: str):
-    filepath = os.path.join(GENERATED_REPORTS_DIR, filename)
-    if not os.path.exists(filepath):
+@router.get("/api/files/{file_type}/{file_name}/preview")
+async def preview_file(file_type: str, file_name: str):
+    file_path = os.path.join(REPORTS_BASE_PATH, file_type, file_name)
+    print(file_path)
+    if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(filepath, filename=filename)
 
+    # Send the PDF file as a response with appropriate content type
+    return FileResponse(file_path, media_type="application/pdf")
 
-@router.get("/view/{filename}")
-async def view_file(filename: str):
-    filepath = os.path.join(GENERATED_REPORTS_DIR, filename)
-    if not os.path.exists(filepath):
+@router.get("/api/files/{file_type}/{file_name}/download")
+async def download_file(file_type: str, file_name: str):
+    file_path = os.path.join(REPORTS_BASE_PATH, file_type, file_name)
+    if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(filepath, media_type="application/pdf")
+
+    # Send the file as a response with the Content-Disposition header to prompt download
+    return FileResponse(file_path, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename={file_name}"
+    })
