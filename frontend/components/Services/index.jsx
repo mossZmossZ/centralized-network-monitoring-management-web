@@ -10,7 +10,7 @@ export function Services() {
         <div className="card w-full bg-base-100 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <figure>
             <img
-              src="path/to/grafana-image.jpg"
+              src="/img/grafana.png"
               alt="Grafana"
               className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
             />
@@ -32,11 +32,11 @@ export function Services() {
         {/* Uptimekuma Card */}
         <div className="card w-full bg-base-100 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <figure>
-            <img
-              src="path/to/uptimekuma-image.jpg"
-              alt="Uptimekuma"
-              className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
-            />
+          <img
+            src="/img/uptime.png" // Path relative to the root of the public directory
+            alt="Uptimekuma"
+            className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
+          />
           </figure>
           <div className="card-body">
             <h3 className="card-title">Uptimekuma</h3>
@@ -56,7 +56,7 @@ export function Services() {
         <div className="card w-full bg-base-100 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <figure>
             <img
-              src="path/to/zabbix-image.jpg"
+              src="/img/zabbix.png"
               alt="Zabbix"
               className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
             />
@@ -79,7 +79,7 @@ export function Services() {
         <div className="card w-full bg-base-100 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <figure>
             <img
-              src="path/to/opensearch-image.jpg"
+              src="/img/opensearch.png"
               alt="Opensearch"
               className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
             />
@@ -102,7 +102,7 @@ export function Services() {
         <div className="card w-full bg-base-100 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <figure>
             <img
-              src="path/to/Report-image.jpg"
+              src="/img/Report.png"
               alt="Report"
               className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
             />
@@ -125,7 +125,7 @@ export function Services() {
         <div className="card w-full bg-base-100 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <figure>
             <img
-              src="path/to/Alert-image.jpg"
+              src="/img/googlechat.png"
               alt="Alert"
               className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
             />

@@ -4,19 +4,19 @@ export function About() {
       name: "Nattavee",
       surname: "Narischat",
       role: "Developer",
-      img: "/images/john.jpg",
+      img: "/img/nattavee.jpg",
     },
     {
       name: "Piyapan",
       surname: "Boonlertanun",
       role: "Developer",
-      img: "/images/jane.jpg",
+      img: "/img/piyapan.jpg",
     },
     {
       name: "Natthinan",
       surname: "Sakulpakdee",
-      role: "Professor & Project Advisor",
-      img: "/images/alan.jpg",
+      role: "Project Advisor",
+      img: "/img/natthinan.png",
     },
   ];
 
@@ -57,10 +57,14 @@ export function About() {
             <img
               src={member.img}
               alt={`${member.name} ${member.surname}`}
-              className="w-24 h-24 rounded-full mb-4 shadow"
+              className="w-24 h-24 rounded-full mb-4 shadow transform transition-transform duration-300 hover:scale-90"
             />
             <h2 className="text-xl font-semibold text-gray-800">{`${member.name} ${member.surname}`}</h2>
-            <p className="text-gray-500">{member.role}</p>
+            {/* Add the typing animation to the role text */}
+            <p className="text-gray-500 overflow-hidden whitespace-nowrap animate-typing">
+              {member.role}
+              <span className="animate-blink">|</span>
+            </p>
           </div>
         ))}
       </div>

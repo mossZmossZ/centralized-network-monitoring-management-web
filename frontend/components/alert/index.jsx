@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
+import WebAlertTable from "./webalert";
 
 export function Alert() {
   const [alertMessage, setAlertMessage] = useState("");
@@ -38,7 +39,7 @@ export function Alert() {
       case "Zabbix":
         return <div>Content for Zabbix Alert</div>;
       case "Web":
-        return <div>Content for Web Alert</div>;
+        return <WebAlertTable />; // Render the WebAlertTable component
       case "Suricata":
         return <div>Content for Suricata Alert</div>;
       default:
