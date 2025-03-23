@@ -14,10 +14,10 @@ from reportlab.platypus import (
 from datetime import datetime, timedelta
 from reportlab.lib import colors
 # Import your existing function
-from daily_zabbix import get_today_zabbix_problem,get_problem_graph,get_today_server_problem,get_today_cpu_usage
-from daily_uptimekuma import get_down_count_day,get_graph_down_day,get_monitor_down_day
-from daily_zabbix import count_today_problems,count_today_server_problems
-from daily_suricata import get_graph_threats,get_threat_summary
+from .dailyzabbix import get_today_zabbix_problem,get_problem_graph,get_today_server_problem,get_today_cpu_usage
+from .daily_uptimekuma import get_down_count_day,get_graph_down_day,get_monitor_down_day
+from .dailyzabbix import count_today_problems,count_today_server_problems
+from .daily_suricata import get_graph_threats,get_threat_summary
 # Get today's network issues from Zabbix
 zabbix_network_issues = get_today_zabbix_problem()
 zabbix_problem_history = get_problem_graph()
@@ -32,14 +32,7 @@ uptime_count_day = json.loads(get_down_count_day())
 
 suricata_threat = get_threat_summary()
 suricata_graph = get_graph_threats()
-print(zabbix_network_issues)
-print(zabbix_problem_history)
 
-# Get current date in "YYYY-MM-DD" format
-current_date = datetime.now().strftime("%Y-%m-%d")
-
-# Generate filename dynamically
-filename = f"Monitoring_Report_{current_date}.pdf"
 
 def generate_report_timestamp():
     now = datetime.now()
@@ -564,6 +557,3 @@ def build_report(filename):
     for chart_file in chart_files:
         if os.path.exists(chart_file):
             os.remove(chart_file)
-
-if __name__ == "__main__":
-    build_report(filename)
