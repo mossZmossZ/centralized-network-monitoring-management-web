@@ -55,10 +55,12 @@ export function GenerateReportModal({ setIsGenerateModalOpen }) {
   
         // Close the loading spinner and show success message
         Swal.close();  // Close the loading spinner
-        Swal.fire("Success!", `${response.data.message}`, "success");
+        const successResult = await Swal.fire("Success!", `${response.data.message}`, "success");
   
-        // Refresh the page after the report is generated
-        window.location.reload();  // Refresh the page
+        if (successResult.isConfirmed) {
+          // Refresh the page only after the user clicks "OK"
+          window.location.reload();  // Refresh the page
+        }
 
         // Close the modal
         setIsGenerateModalOpen(false);
