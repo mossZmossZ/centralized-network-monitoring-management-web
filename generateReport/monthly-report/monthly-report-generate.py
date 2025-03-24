@@ -11,59 +11,65 @@ from reportlab.platypus import (
     BaseDocTemplate, PageTemplate, Frame,
     Paragraph, Spacer, Image, Table, TableStyle
 )
-
+from datetime import datetime, timedelta
+from reportlab.lib import colors
+# Import your existing function
+from monthly_zabbix import get_month_zabbix_problem,get_problem_graph,get_month_server_problem,get_month_cpu_usage
+from monthly_zabbix import count_today_problems,count_today_server_problems
 from monthly_uptimekuma import get_down_count_month,get_graph_down_month,get_monitor_down_month
+from monthly_suricata import get_graph_threats,get_threat_summary
+
+zabbix_network_issues = get_month_zabbix_problem()
+zabbix_problem_history = get_problem_graph()
+zabbix_os_issues = get_month_server_problem()
+zabbix_cpu_uses = get_month_cpu_usage()
+zabbix_count_problem = count_today_problems()
+zabbix_count_server = count_today_server_problems()
 
 uptime_web_issue = json.loads(get_monitor_down_month())
 uptime_web_downtime = json.loads(get_graph_down_month())
 uptime_count_day = json.loads(get_down_count_month())
 
-api_response = {
-    "report_date": "2025-03-16",
-    "data_range": "2025-03-15 13:00 -- 2025-03-16 12:59 GMT+7",
+suricata_threat = get_threat_summary()
+suricata_graph = get_graph_threats()
 
-    "network_issues": [
-        ["2025-03-15 12:47:49 PM", "Switch 3750 Comcenter", "Interface Gi1/0/40(): Link down", "2d 4h 59m"]
-    ],
-    'problem_history': {'Speed Change': [0, 5, 6, 0, 0, 0], 'Link Down': [27, 33, 56, 0, 0, 0], 'Other Issue': [0, 1, 0, 0, 0, 0]},
+def generate_report_timestamp():
+    now = datetime.now()
+    start_time = now - timedelta(days=31)
     
+    report_date = now.strftime("%Y-%m-%d")
+    data_range = f"{start_time.strftime('%Y-%m-%d %H:%M')} -- {now.strftime('%Y-%m-%d %H:%M')} GMT+7"
+    
+    return {
+        "report_date": report_date,
+        "data_range": data_range
+    }
 
-    "os_issues": [
-        ["2025-02-28 09:13:58 PM", "Host1", "High CPU Load", "12h 30m"]
-    ],
+timestamps = generate_report_timestamp()
+api_response = {
+    "report_date": timestamps["report_date"],
+    "data_range": timestamps["data_range"],
 
-    "cpu_usage": {
-        "Host1": [30, 50, 75, 85,30,40],
-        "Host2": [25, 60, 48, 78,50,60]
-    },
+    "network_issues": zabbix_network_issues.get("network_issues", []),
+
+    'problem_history': zabbix_problem_history.get("problem_history", []),
+
+    "os_issues": zabbix_os_issues.get("os_issues", []),
+
+    "cpu_usage": zabbix_cpu_uses.get("cpu_usage", []),
 
     "web_issues": uptime_web_issue.get("web_issues", []),
 
     "web_downtime": uptime_web_downtime.get("web_downtime", []),
  
     "incident_summary": {
-        "Network Devices": 15,
-        "Operating Systems": 9,
-        "Web Application": 6
+        "Network Devices": zabbix_count_problem,
+        "Operating Systems": zabbix_count_server,
+        "Web Application": uptime_count_day.get("Web Application", [])
     },
 
-    'threats_detected': [['2025-03-19T08:33:19+07:00', 
-                          'Port Scan Detected', '1557'], 
-                          ['2025-03-19T08:31:24+07:00', 'DROP Dshield Block', '81'],
-                            ['2025-03-19T08:30:11+07:00', 'Potential SSH Scan', '42'], 
-                            ['2025-03-19T08:10:36+07:00', 'DROP Spamhaus', '33'], 
-                            ['2025-03-19T08:12:44+07:00', 'DROP Listed Traffic Inbound group 37', '15'],
-                              ['2025-03-19T04:34:59+07:00', 'DROP Listed Traffic Inbound group 31', '13'],
-                                ['2025-03-19T05:04:54+07:00', 'DROP Listed Traffic Inbound group 12', '11'], 
-                                ['2025-03-19T06:10:21+07:00', 'DROP Listed Traffic Inbound group 29', '9'], 
-                                ['2025-03-18T19:49:30+07:00', 'Known Compromised or Hostile Host Traffic group 10', '5'], 
-                                ['2025-03-18T15:27:31+07:00', 'DROP Listed Traffic Inbound group 54', '5']],
-
-    'threats_history':{
-        'DROP Listed': [8, 9, 9, 39, 44, 13], 
-        'Port Scan': [96, 61, 125, 387, 506, 346], 
-        'Dshield': [5, 3, 11, 38, 29, 16]
-        }
+    'threats_detected': suricata_threat.get("threats_detected", []),
+    'threats_history': suricata_graph.get("threats_history", []),
 }
 ###############################################################################
 # 1) Header & Footer Function
@@ -208,7 +214,11 @@ def build_report(filename):
     for problem, values in api_problem_history.items():
         while len(values) < len(time_slots):  # Ensure each problem type has 6 values
             values.append(0)
-        formatted_problem_history[problem] = values[:len(time_slots)]  # Keep only 6 values
+        if isinstance(values, dict):
+            values = list(values.values())  # แปลง Dictionary เป็น List
+        elif not isinstance(values, list):
+            values = []  # ถ้าไม่ใช่ List ให้ใช้ค่าเริ่มต้นเป็น List ว่าง
+        formatted_problem_history[problem] = values[:len(time_slots)]
 
     # Convert API problem history data to DataFrame with correct structure
     problem_data = pd.DataFrame(formatted_problem_history, index=time_slots)
@@ -510,7 +520,11 @@ def build_report(filename):
     for threat, values in api_threats_history.items():
         while len(values) < len(time_slots_threats):  # Ensure each threat has 6 values
             values.append(0)
-        formatted_threats_history[threat] = values[:len(time_slots_threats)]  # Keep only 6 values
+        if threat not in formatted_threats_history:
+            formatted_threats_history[threat] = []  # ถ้ายังไม่มี key นี้ ให้สร้าง list เปล่า
+
+        # แปลง dict เป็น list แล้ว slice
+        formatted_threats_history[threat] = list(values.values())[:len(time_slots_threats)]
 
     # Create DataFrame with correct structure
     threats_history_df = pd.DataFrame(formatted_threats_history, index=time_slots_threats)

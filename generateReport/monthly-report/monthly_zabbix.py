@@ -10,7 +10,14 @@ ZABBIX_API_TOKEN = os.getenv("ZABBIX_API_TOKEN")
 ZABBIX_API_URL = f"{ZABBIX_SERVER}/api_jsonrpc.php"
 
 
-time_slots = [0, 4, 8, 12, 16, 20]
+time_slots = {
+    "01-05": range(1, 6),
+    "06-10": range(6, 11),
+    "11-15": range(11, 16),
+    "16-20": range(16, 21),
+    "21-25": range(21, 26),
+    "26-31": range(26, 32),
+}
 time_slots_cpu = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
 
@@ -71,16 +78,16 @@ def get_Zabbix_servers_group_id():
     return None
 
 
-def get_today_server_problem():
+def get_month_server_problem():
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
         print("Could not find 'Zabbix servers' group.")
         return []
     
     now = datetime.now()
-    past_24h = now - timedelta(hours=24)  # Exact past 24 hours
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0)
     
-    time_from = int(past_24h.timestamp())  
+    time_from = int(start_of_month.timestamp())  
     time_to = int(now.timestamp())  
 
     HEADERS = {
@@ -149,7 +156,7 @@ def extract_problem_type(description):
 
     return "Other Issue"
 
-def get_today_zabbix_problem():
+def get_month_zabbix_problem():
     """Fetch Zabbix problems from the past 24 hours with a 24-hour format."""
     
     group_id = get_discovered_hosts_group_id()
@@ -158,10 +165,11 @@ def get_today_zabbix_problem():
         return []
 
     now = datetime.now()
-    past_24h = now - timedelta(days=1)  # Get time 24 hours ago
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0)  
+    end_of_month = (start_of_month + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
 
-    time_from = int(past_24h.timestamp())  
-    time_to = int(now.timestamp())  
+    time_from = int(start_of_month.timestamp())  
+    time_to = int(end_of_month.timestamp())  
 
     HEADERS = {
         "Content-Type": "application/json",
@@ -231,43 +239,38 @@ def get_today_zabbix_problem():
 
 
 def get_problem_graph():
-    raw_issues_data = get_today_zabbix_problem()  # Fetch issues
+    raw_issues_data = get_month_zabbix_problem()  # Fetch issues
     raw_issues = raw_issues_data.get("network_issues", [])  
 
     now = datetime.now()
-    start_of_today = datetime(now.year, now.month, now.day, 0, 0)  # Today 00:00
+    start_of_today = datetime(now.year, now.month, 1, 0, 0)  # เริ่มต้นเดือน
 
-    problem_history = defaultdict(lambda: [0] * len(time_slots))
-    has_valid_data = False  # Track if at least one issue is counted
+    problem_history = defaultdict(lambda: {slot: 0 for slot in time_slots.keys()})
+    has_valid_data = False  
 
     for issue in raw_issues:
         formatted_time, host, problem_type, duration = issue  
         event_dt = datetime.strptime(formatted_time, "%Y-%m-%d %H:%M:%S")
 
-        # Skip issues before 00:00 today
         if event_dt < start_of_today:
             continue  
 
-        event_hour = event_dt.hour  # Extract hour from event
+        event_day = event_dt.day  
 
-        # Assign the issue to the correct time slot
-        for i in range(len(time_slots)):
-            next_slot = time_slots[i + 1] if i + 1 < len(time_slots) else 24  # End of day
-            
-            if time_slots[i] <= event_hour < next_slot:
-                problem_history[problem_type][i] += duration
-                has_valid_data = True  # At least one valid issue exists
+        for slot, day_range in time_slots.items():
+            if event_day in day_range:
+                problem_history[problem_type][slot] += duration
+                has_valid_data = True
                 break
 
-    # If no valid issues were found for today, return "No Data"
     if not has_valid_data:
-        return {"problem_history": {"No Data": [0, 0, 0, 0, 0, 0]}}
-    
+        return {"problem_history": {"No Data": {slot: 0 for slot in time_slots.keys()}}}
+
     return {"problem_history": dict(problem_history)}
 
 
 def count_today_problems():
-    raw_issues_data = get_today_zabbix_problem()
+    raw_issues_data = get_month_zabbix_problem()
     raw_issues = raw_issues_data.get("network_issues", [])
 
     total_problems = sum(issue[3] for issue in raw_issues)  # Summing the count column
@@ -276,14 +279,14 @@ def count_today_problems():
 
 def count_today_server_problems():
    
-    raw_issues_data = get_today_server_problem()  # Fetch today's problem data
+    raw_issues_data = get_month_server_problem()  # Fetch today's problem data
     raw_issues = raw_issues_data["os_issues"]  
 
     total_server_problems = len(raw_issues)
 
     return total_server_problems
 
-def get_today_cpu_usage():
+def get_month_cpu_usage():
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
         print("❌ Could not find 'Zabbix Servers' group.")
@@ -316,11 +319,11 @@ def get_today_cpu_usage():
     now = datetime.now()
     today_midnight = now.replace(hour=0, minute=0, second=0)  # Start of today
 
-    # Generate time slots from 00:00 to now (hourly)
+    # สร้าง time slots จาก 00:00 ถึงตอนนี้ (เป็น datetime objects)
     time_slots_cpu = [today_midnight + timedelta(hours=i) for i in range(now.hour + 1)]
-    time_slots_str = [ts.strftime("%H:%M") for ts in time_slots_cpu]  # Format time slot labels
+    time_slots_str = [ts.strftime("%H:%M") for ts in time_slots_cpu]  # ฟอร์แมตเป็น string ช่วงเวลา
 
-    cpu_usage = defaultdict(lambda: [0] * len(time_slots_str))  # Default all slots to 0
+    cpu_usage = defaultdict(lambda: [0] * len(time_slots_str))  # กำหนดค่าเริ่มต้นทั้งหมดเป็น 0
 
     for host_id, host_name in hosts.items():
         item_id = get_cpu_itemid(host_id)
