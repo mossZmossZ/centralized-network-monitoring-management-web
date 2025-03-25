@@ -13,12 +13,12 @@ class DateRequest(BaseModel):
     date: str  # The date in the format YYYY-MM-DD
 
 # Create a new router
-router = APIRouter(prefix="/api/report", tags=["report"])
+router = APIRouter()
 
-# Define the full absolute path to save the generated reports (custom_report/monthly inside the generated_reports folder)
-REPORTS_FOLDER_MONTHLY = os.path.join('generated_reports', 'custom_report', 'monthly')
-REPORTS_FOLDER_WEEKLY = os.path.join('generated_reports', 'custom_report', 'weekly')
-REPORTS_FOLDER_DAILY = os.path.join('generated_reports', 'custom_report', 'daily')
+# Define the full absolute path to save the generated reports (schedule_report/monthly inside the generated_reports folder)
+REPORTS_FOLDER_MONTHLY = os.path.join('generated_reports', 'schedule_report', 'monthly')
+REPORTS_FOLDER_WEEKLY = os.path.join('generated_reports', 'schedule_report', 'weekly')
+REPORTS_FOLDER_DAILY = os.path.join('generated_reports', 'schedule_report', 'daily')
 # Ensure the reports folder exists (create if it doesn't)
 if not os.path.exists(REPORTS_FOLDER_MONTHLY):
     print(f"Creating directory: {REPORTS_FOLDER_MONTHLY}")  # Debugging print statement
@@ -33,8 +33,8 @@ def get_unique_filename(base_path: str):
         file_path = f"{base_path.rsplit('.', 1)[0]}-{version}.pdf"  # Append version number to filename
     return file_path
 
-@router.post("/custom-monthly-report")
-async def custom_monthly_report(data: DateRequest):
+@router.post("/schedule-monthly-report")
+async def schedule_monthly_report(data: DateRequest):
     # Validate and format the date from the request
     try:
         # Try to parse the date in case it's incorrect
@@ -42,11 +42,11 @@ async def custom_monthly_report(data: DateRequest):
     except ValueError:
         return {"error": "Invalid date format, expected YYYY-MM-DD."}
     
-    # Generate the custom report name
-    custom_report_name = f"Custom-{data.date}-monthly-Monitoring_Report.pdf"
+    # Generate the schedule report name
+    schedule_report_name = f"schedule-{data.date}-monthly-Monitoring_Report.pdf"
     
     
-    report_path = os.path.join(REPORTS_FOLDER_MONTHLY, custom_report_name)
+    report_path = os.path.join(REPORTS_FOLDER_MONTHLY, schedule_report_name)
     
     # Ensure the filename is unique (handle versioning if the file already exists)
     unique_report_path = get_unique_filename(report_path)
@@ -57,7 +57,7 @@ async def custom_monthly_report(data: DateRequest):
     # Call the build_report function with the full path for saving the report
     build_report(unique_report_path)
     
-    return {"message": f"Custom monthly report generated: {unique_report_path}"}
+    return {"message": f"schedule monthly report generated: {unique_report_path}"}
 
 # Ensure the reports folder exists (create if it doesn't)
 if not os.path.exists(REPORTS_FOLDER_WEEKLY):
@@ -73,8 +73,8 @@ def get_unique_filename(base_path: str):
         file_path = f"{base_path.rsplit('.', 1)[0]}-{version}.pdf"  # Append version number to filename
     return file_path
 
-@router.post("/custom-weekly-report")
-async def custom_weekly_report(data: DateRequest):
+@router.post("/schedule-weekly-report")
+async def schedule_weekly_report(data: DateRequest):
     # Validate and format the date from the request
     try:
         # Try to parse the date in case it's incorrect
@@ -82,11 +82,11 @@ async def custom_weekly_report(data: DateRequest):
     except ValueError:
         return {"error": "Invalid date format, expected YYYY-MM-DD."}
     
-    # Generate the custom report name
-    custom_report_name = f"Custom-{data.date}-Weekly-Monitoring_Report.pdf"
+    # Generate the schedule report name
+    schedule_report_name = f"schedule-{data.date}-Weekly-Monitoring_Report.pdf"
     
     
-    report_path = os.path.join(REPORTS_FOLDER_WEEKLY, custom_report_name)
+    report_path = os.path.join(REPORTS_FOLDER_WEEKLY, schedule_report_name)
     
     # Ensure the filename is unique (handle versioning if the file already exists)
     unique_report_path = get_unique_filename(report_path)
@@ -97,7 +97,7 @@ async def custom_weekly_report(data: DateRequest):
     # Call the build_report function with the full path for saving the report
     build_report(unique_report_path)
     
-    return {"message": f"Custom weekly report generated: {unique_report_path}"}
+    return {"message": f"schedule weekly report generated: {unique_report_path}"}
 
 
 
@@ -115,8 +115,8 @@ def get_unique_filename(base_path: str):
         file_path = f"{base_path.rsplit('.', 1)[0]}-{version}.pdf"  # Append version number to filename
     return file_path
 
-@router.post("/custom-daily-report")
-async def custom_daily_report(data: DateRequest):
+@router.post("/schedule-daily-report")
+async def schedule_daily_report(data: DateRequest):
     # Validate and format the date from the request
     try:
         # Try to parse the date in case it's incorrect
@@ -124,11 +124,11 @@ async def custom_daily_report(data: DateRequest):
     except ValueError:
         return {"error": "Invalid date format, expected YYYY-MM-DD."}
     
-    # Generate the custom report name
-    custom_report_name = f"Custom-{data.date}-Daily-Monitoring_Report.pdf"
+    # Generate the schedule report name
+    schedule_report_name = f"schedule-{data.date}-Monitoring_Report.pdf"
     
     # Define the full path to save the report in the 'daily' folder
-    report_path = os.path.join(REPORTS_FOLDER_DAILY, custom_report_name)
+    report_path = os.path.join(REPORTS_FOLDER_DAILY, schedule_report_name)
     
     # Ensure the filename is unique (handle versioning if the file already exists)
     unique_report_path = get_unique_filename(report_path)
@@ -139,4 +139,4 @@ async def custom_daily_report(data: DateRequest):
     # Call the build_report function with the full path for saving the report
     build_report(unique_report_path)
     
-    return {"message": f"Custom daily report generated: {unique_report_path}"}
+    return {"message": f"schedule daily report generated: {unique_report_path}"}

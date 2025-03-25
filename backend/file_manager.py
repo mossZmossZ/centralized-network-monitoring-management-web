@@ -47,3 +47,16 @@ async def download_file(file_type: str, file_name: str):
     return FileResponse(file_path, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename={file_name}"
     })
+
+@router.delete("/api/files/{file_type}/{file_name}")
+async def delete_file(file_type: str, file_name: str):
+    file_path = os.path.join(REPORTS_BASE_PATH, file_type, file_name)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Attempt to delete the file
+    try:
+        os.remove(file_path)
+        return {"message": f"File '{file_name}' has been deleted successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")

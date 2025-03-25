@@ -1,5 +1,3 @@
-
-
 export function Services() {
   return (
     <div className="container mx-auto p-4">
@@ -17,7 +15,7 @@ export function Services() {
           </figure>
           <div className="card-body">
             <h3 className="card-title">Grafana</h3>
-            <p>Monitor and analyze your metrics and logs in one place with Grafana.</p>
+            <p>Monitor and analyze system and application activities, aligned with ISO/IEC 27001 A.8.16 and TIA-942 Monitoring & Alerting standards.</p>
             <div className="card-actions justify-end">
               <a
                 href="#get-started"
@@ -32,15 +30,15 @@ export function Services() {
         {/* Uptimekuma Card */}
         <div className="card w-full bg-base-100 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <figure>
-          <img
-            src="/img/uptime.png" // Path relative to the root of the public directory
-            alt="Uptimekuma"
-            className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
-          />
+            <img
+              src="/img/uptime.png"
+              alt="Uptimekuma"
+              className="h-48 w-full object-cover transition-all duration-300 hover:scale-105"
+            />
           </figure>
           <div className="card-body">
             <h3 className="card-title">Uptimekuma</h3>
-            <p>A self-hosted status monitoring solution to keep track of your services.</p>
+            <p>Self-hosted status monitoring solution to ensure redundancy and uptime in your services, in line with TIA-942 Redundant Cabling standards.</p>
             <div className="card-actions justify-end">
               <a
                 href="#get-started"
@@ -63,7 +61,7 @@ export function Services() {
           </figure>
           <div className="card-body">
             <h3 className="card-title">Zabbix</h3>
-            <p>Powerful open-source software for monitoring IT infrastructure.</p>
+            <p>Monitor IT infrastructure and network services, aligning with ISO/IEC 27001 A.8.21 and A.8.22, and ensuring network security and segregation, in line with TIA-942 standards.</p>
             <div className="card-actions justify-end">
               <a
                 href="#get-started"
@@ -86,7 +84,7 @@ export function Services() {
           </figure>
           <div className="card-body">
             <h3 className="card-title">Opensearch</h3>
-            <p>Search, analyze, and visualize your data with OpenSearch.</p>
+            <p>Search, analyze, and visualize logs for auditing and internal compliance, aligned with ISO/IEC 27001 A.9.2 Internal Audit and A.10.2 Corrective Action standards.</p>
             <div className="card-actions justify-end">
               <a
                 href="#get-started"
@@ -109,7 +107,7 @@ export function Services() {
           </figure>
           <div className="card-body">
             <h3 className="card-title">Report</h3>
-            <p>Search, analyze, and visualize your data with Report.</p>
+            <p>Generate scheduled reports with ISO 27001 compliance, supporting performance monitoring, and compliance evaluation as per A.9.1.</p>
             <div className="card-actions justify-end">
               <a
                 href="#get-started"
@@ -132,7 +130,7 @@ export function Services() {
           </figure>
           <div className="card-body">
             <h3 className="card-title">Alert</h3>
-            <p>Search, analyze, and visualize your data with Alert.</p>
+            <p>Receive real-time alerts for temperature anomalies, power failures, or suspicious activities, meeting both ISO 27001 A.8.15 Logging and TIA-942 standards for monitoring.</p>
             <div className="card-actions justify-end">
               <a
                 href="#get-started"

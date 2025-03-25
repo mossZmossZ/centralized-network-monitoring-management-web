@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Swal from 'sweetalert2'; // SweetAlert2 import
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { toolbarPlugin } from "@react-pdf-viewer/toolbar";
@@ -56,6 +57,40 @@ export function CustomReport() {
     link.click(); // Trigger the download
   };
 
+  // Function to delete the file with SweetAlert confirmation
+  const handleDelete = (fileType, fileName) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: `You are about to delete ${fileName} permanently!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'No, cancel!',
+      input: 'text',  // Adding an input field to type "delete"
+      inputPlaceholder: 'Type "delete" to confirm',
+      preConfirm: (inputValue) => {
+        // Check if the input value matches "delete"
+        if (inputValue.toLowerCase() !== 'delete') {
+          Swal.showValidationMessage('You need to type "delete" to confirm');
+          return false;
+        }
+        return true; // Proceed if input is correct
+      }
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await axios.delete(
+            `http://localhost:8000/api/files/${fileType}/${fileName}`
+          );
+          Swal.fire('Deleted!', response.data.message, 'success');
+          fetchGeneratedFiles(); // Refresh the list of files after deletion
+        } catch (error) {
+          Swal.fire('Error!', 'There was an error deleting the file.', 'error');
+        }
+      }
+    });
+  };
+
   // Function to close the modal
   const closeModal = () => {
     setIsModalOpen(false); // Close the modal
@@ -97,16 +132,23 @@ export function CustomReport() {
                   <td>{new Date().toLocaleDateString()}</td>
                   <td>
                     <button
-                      className="btn btn-sm btn-primary mr-2"
+                      className="btn btn-sm btn-info mr-2"
                       onClick={() => handlePreview(reportType.toLowerCase().split('-')[0], file)} // Preview
                     >
                       Preview
                     </button>
                     <button
-                      className="btn btn-sm btn-success"
+                      className="btn btn-sm btn-success mr-2"
                       onClick={() => handleDownload(reportType.toLowerCase().split('-')[0], file)} // Download
                     >
                       Download
+                    </button>
+                    
+                    <button
+                      className="btn btn-sm btn-secondary mr-2"
+                      onClick={() => handleDelete(reportType.toLowerCase().split('-')[0], file)} // Delete
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>
