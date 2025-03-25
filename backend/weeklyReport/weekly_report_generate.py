@@ -135,7 +135,7 @@ def generate_chart(data, chart_type, filename, colors_list=None,
 ###############################################################################
 # 3) Main Report-Building Function
 ###############################################################################
-def build_report(filename):
+def build_report_weekly(filename):
     chart_files = []
     ###########################################################################
     # A) Create the Document (BaseDocTemplate) and PageTemplate

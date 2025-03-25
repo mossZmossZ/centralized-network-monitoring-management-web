@@ -4,9 +4,9 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from dateutil.relativedelta import relativedelta
-from monthlyReport.monthly_report_generate import build_report
-from weeklyReport.weekly_report_generate import build_report
-from dailyReport.daily_report_generate import build_report
+from monthlyReport.monthly_report_generate import build_monthy_report
+from weeklyReport.weekly_report_generate import build_report_weekly
+from dailyReport.daily_report_generate import build_report_daily
 from websocket_router import ws_manager
 import threading
 
@@ -39,7 +39,7 @@ def generate_daily_report():
     report_path = os.path.join(REPORTS_FOLDER_DAILY, schedule_report_name)
     unique_report_path = get_unique_filename(report_path)
     print(f"Saving daily report to: {unique_report_path}")
-    build_report(unique_report_path)
+    build_report_daily(unique_report_path)
     # Notify WebSocket clients
     ws_manager.send_notification(f"Daily Report generated successfully")
 
@@ -49,7 +49,7 @@ def generate_weekly_report():
     report_path = os.path.join(REPORTS_FOLDER_WEEKLY, schedule_report_name)
     unique_report_path = get_unique_filename(report_path)
     print(f"Saving weekly report to: {unique_report_path}")
-    build_report(unique_report_path)
+    build_report_weekly(unique_report_path)
     # Notify WebSocket clients
     ws_manager.send_notification(f"Weekly Report generated successfully")
 
@@ -59,7 +59,7 @@ def generate_monthly_report():
     report_path = os.path.join(REPORTS_FOLDER_MONTHLY, schedule_report_name)
     unique_report_path = get_unique_filename(report_path)
     print(f"Saving monthly report to: {unique_report_path}")
-    build_report(unique_report_path)
+    build_monthy_report(unique_report_path)
     # Notify WebSocket clients
     ws_manager.send_notification(f"Monthly Report generated successfully")
 
@@ -128,7 +128,7 @@ async def generate_daily_report_API():
     report_path = os.path.join(REPORTS_FOLDER_DAILY, schedule_report_name)
     unique_report_path = get_unique_filename(report_path)
     print(f"Saving daily report to: {unique_report_path}")
-    build_report(unique_report_path)
+    build_report_daily(unique_report_path)
     # Notify WebSocket clients
     await ws_manager.send_notification(f"Daily Report generated successfully")
     return(f"Daily Report generated successfully: {unique_report_path}")
@@ -140,7 +140,7 @@ async def generate_weekly_report_API():
     report_path = os.path.join(REPORTS_FOLDER_WEEKLY, schedule_report_name)
     unique_report_path = get_unique_filename(report_path)
     print(f"Saving weekly report to: {unique_report_path}")
-    build_report(unique_report_path)
+    build_report_weekly(unique_report_path)
     # Notify WebSocket clients
     await ws_manager.send_notification(f"Weekly Report generated successfully")
     return(f"Weekly Report generated successfully: {unique_report_path}")
@@ -152,7 +152,7 @@ async def generate_monthly_report_API():
     report_path = os.path.join(REPORTS_FOLDER_MONTHLY, schedule_report_name)
     unique_report_path = get_unique_filename(report_path)
     print(f"Saving monthly report to: {unique_report_path}")
-    build_report(unique_report_path)
+    build_monthy_report(unique_report_path)
     # Notify WebSocket clients
     await ws_manager.send_notification(f"Monthly Report generated successfully")
     return(f"Monthly Report generated successfully: {unique_report_path}")

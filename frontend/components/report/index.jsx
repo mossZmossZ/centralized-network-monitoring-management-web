@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { CustomReport } from "./components/CustomReport";
 import { ScheduleReport } from "./components/ScheduleReport";
-import { LocalFiles } from "./components/LocalFiles";
 import { GenerateReportModal } from "./components/GenerateReportModal"; // Modal Component for Generate Report
 
 export function Report() {
@@ -30,12 +29,6 @@ export function Report() {
             onClick={() => setActiveSection("schedule")}
           >
             Schedule
-          </button>
-          <button
-            className={`btn ${activeSection === "local" ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setActiveSection("local")}
-          >
-            Local
           </button>
         </div>
 

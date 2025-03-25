@@ -3,11 +3,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 import datetime
 import os
-
-
-from monthlyReport.monthly_report_generate import build_report
-from weeklyReport.weekly_report_generate import build_report
-from dailyReport.daily_report_generate import build_report
+from monthlyReport.monthly_report_generate import build_monthy_report
+from weeklyReport.weekly_report_generate import build_report_weekly
+from dailyReport.daily_report_generate import build_report_daily
 # Define the request model for the POST API
 class DateRequest(BaseModel):
     date: str  # The date in the format YYYY-MM-DD
@@ -55,7 +53,7 @@ async def custom_monthly_report(data: DateRequest):
     print(f"Saving report to: {unique_report_path}")  # This will show the exact location of where the file is being saved
 
     # Call the build_report function with the full path for saving the report
-    build_report(unique_report_path)
+    build_monthy_report(unique_report_path)
     
     return {"message": f"Custom monthly report generated: {unique_report_path}"}
 
@@ -95,7 +93,7 @@ async def custom_weekly_report(data: DateRequest):
     print(f"Saving report to: {unique_report_path}")  # This will show the exact location of where the file is being saved
 
     # Call the build_report function with the full path for saving the report
-    build_report(unique_report_path)
+    build_report_weekly(unique_report_path)
     
     return {"message": f"Custom weekly report generated: {unique_report_path}"}
 
@@ -137,6 +135,6 @@ async def custom_daily_report(data: DateRequest):
     print(f"Saving report to: {unique_report_path}")  # This will show the exact location of where the file is being saved
 
     # Call the build_report function with the full path for saving the report
-    build_report(unique_report_path)
+    build_report_daily(unique_report_path)
     
     return {"message": f"Custom daily report generated: {unique_report_path}"}
