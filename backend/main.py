@@ -10,6 +10,8 @@ from file_manager import router as file_manager_router
 from alert_gateway import router as alert_router
 from customDailyreportAPI import router as custom_daily_report_router  # Import from the same level
 from customWeeklyreportAPI import router as custom_weekly_report_router
+from customMonthlyreportAPI import router as custom_monthly_report_router
+from customReportAPI import router as custom_report_router
 # Load environment variables
 load_dotenv()
 
@@ -37,6 +39,7 @@ async def debug_path():
 app.include_router(report_router)
 app.include_router(file_manager_router)
 app.include_router(alert_router)
-app.include_router(custom_daily_report_router)  # Include the custom report router
-app.include_router(custom_weekly_report_router)
-
+#app.include_router(custom_daily_report_router)  # Include the custom report router
+#app.include_router(custom_weekly_report_router)
+#app.include_router(custom_monthly_report_router)
+app.include_router(custom_report_router)
