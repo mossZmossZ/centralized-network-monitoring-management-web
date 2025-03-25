@@ -13,7 +13,7 @@ class DateRequest(BaseModel):
     date: str  # The date in the format YYYY-MM-DD
 
 # Create a new router
-router = APIRouter(prefix="/api/report", tags=["report"])
+router = APIRouter(prefix="/api/report", tags=["report-custom"])
 
 # Define the full absolute path to save the generated reports (custom_report/monthly inside the generated_reports folder)
 REPORTS_FOLDER_MONTHLY = os.path.join('generated_reports', 'custom_report', 'monthly')

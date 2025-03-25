@@ -1,15 +1,15 @@
-# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 
+from websocket_router import websocket_router  # Import your websocket router
 # Import routers
-from report_api import router as report_router
 from file_manager import router as file_manager_router
 from alert_gateway import router as alert_router
 from customReportAPI import router as custom_report_router
 from scheduleReportAPI import router as schedule_report_router
+
 # Load environment variables
 load_dotenv()
 
@@ -28,14 +28,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/debug/path")
-async def debug_path():
-    return {"PATH": os.environ.get("PATH")}
+
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to FastAPI with WebSocket"}
 
 # Include all routers including the new custom report router
-
-app.include_router(report_router)
 app.include_router(file_manager_router)
 app.include_router(alert_router)
 app.include_router(custom_report_router)
 app.include_router(schedule_report_router)
+app.include_router(websocket_router)  # Include the websocket router

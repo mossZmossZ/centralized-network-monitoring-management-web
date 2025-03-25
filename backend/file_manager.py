@@ -2,7 +2,7 @@ import os
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from fastapi import FastAPI, HTTPException
-router = APIRouter()
+router = APIRouter(tags=["File_manager"])
 
 # Define the directories for daily, weekly, and monthly reports
 REPORTS_BASE_PATH = "generated_reports/custom_report"

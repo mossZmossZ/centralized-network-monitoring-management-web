@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-router = APIRouter()
+router = APIRouter(tags=["Alert"])
 
 # Get Google Chat webhook URL from .env
 GOOGLE_CHAT_WEBHOOK_URL = os.getenv("GOOGLE_CHAT_WEBHOOK_URL")

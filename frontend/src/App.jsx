@@ -11,12 +11,15 @@ import { User } from "../components/user/index.jsx";
 import DocsIndex from "../components/docs/DocsIndex.jsx";
 import { Login } from "../components/login/index.jsx";
 import { Maintenance } from "../components/maintenance/index.jsx";
+import WebSocketNotification from "./WebSocketNotification";
 
 export default function App() {
   return (
     <Router>
+      
       <div className="flex flex-col min-h-screen">
         <Navbar />
+        <WebSocketNotification />
         <div className="flex-grow">
           <Routes>
             <Route path="/" element={<Main />} />
