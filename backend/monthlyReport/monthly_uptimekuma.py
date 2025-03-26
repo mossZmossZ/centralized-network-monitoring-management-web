@@ -3,7 +3,12 @@ import requests
 import json
 from datetime import datetime
 from dotenv import load_dotenv
-load_dotenv()
+from pathlib import Path
+
+# Assuming your .env is in the project root
+dotenv_path = Path(__file__).resolve().parents[1] / '.env'
+load_dotenv(dotenv_path)
+
 
 BASE_URL = os.getenv("OPENSEARCH_URL", "http://localhost:9200")
 INDEX_NAME = os.getenv("OPENSEARCH_INDEX", "uptime_kuma_alerts-*")

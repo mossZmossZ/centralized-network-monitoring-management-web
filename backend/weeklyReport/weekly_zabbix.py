@@ -1,9 +1,13 @@
 import os
 import requests
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from collections import defaultdict
-load_dotenv()
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Assuming your .env is in the project root
+dotenv_path = Path(__file__).resolve().parents[1] / '.env'
+load_dotenv(dotenv_path)
 
 ZABBIX_SERVER = os.getenv("ZABBIX_SERVER")
 ZABBIX_API_TOKEN = os.getenv("ZABBIX_API_TOKEN")

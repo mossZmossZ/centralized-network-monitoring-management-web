@@ -6,7 +6,12 @@ timestamp = datetime.now(timezone.utc)
 
 from dateutil import parser
 from dotenv import load_dotenv
-load_dotenv()
+from pathlib import Path
+
+# Assuming your .env is in the project root
+dotenv_path = Path(__file__).resolve().parents[1] / '.env'
+load_dotenv(dotenv_path)
+
 
 OPENSEARCH_URL = os.getenv("OPENSEARCH_URL")
 OPENSEARCH_SURICATA_INDEX = os.getenv("OPENSEARCH_SURICATA_INDEX")

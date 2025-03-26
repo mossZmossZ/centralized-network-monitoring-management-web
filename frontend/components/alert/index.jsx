@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import WebAlertTable from "./webalert";
+import ZabbixAlertTable from "./zabbixalert";
 
 export function Alert() {
   const [alertMessage, setAlertMessage] = useState("");
@@ -37,7 +38,8 @@ export function Alert() {
   const renderTable = () => {
     switch (selectedTable) {
       case "Zabbix":
-        return <div>Content for Zabbix Alert</div>;
+        //return <div>Select a table</div>;
+        return <ZabbixAlertTable />;
       case "Web":
         return <WebAlertTable />; // Render the WebAlertTable component
       case "Suricata":

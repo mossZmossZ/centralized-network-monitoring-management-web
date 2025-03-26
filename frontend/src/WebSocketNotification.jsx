@@ -1,41 +1,98 @@
-// WebSocketNotification.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const WebSocketNotification = () => {
-  const [message, setMessage] = useState("");  // To hold incoming notification messages
-  const [showNotification, setShowNotification] = useState(false);  // To control visibility
+  const [message, setMessage] = useState("");
+  const [showNotification, setShowNotification] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
+  const hasShownError = useRef(false);
+  const socketRef = useRef(null);
 
   useEffect(() => {
-    // Create a WebSocket connection to the FastAPI backend
-    const socket = new WebSocket("ws://localhost:8000/ws/notify");
+    connectWebSocket();
+    return () => socketRef.current?.close();
+  }, []);
 
-    // Listen for messages from the WebSocket server
+  const connectWebSocket = () => {
+    const socket = new WebSocket("ws://localhost:8000/ws/notify");
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("✅ WebSocket connected.");
+      setConnectionError(false);
+    };
+
     socket.onmessage = (event) => {
-      setMessage(event.data);  // Set the received message
-      setShowNotification(true);  // Show notification
-      setTimeout(() => setShowNotification(false), 5000);  // Hide after 5 seconds
+      setMessage(event.data);
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 5000);
     };
 
     socket.onerror = (error) => {
-      console.error("WebSocket Error: ", error);
+      console.error("❌ WebSocket error:", error);
+      if (!hasShownError.current) {
+        setConnectionError(true);
+        hasShownError.current = true;
+      }
     };
 
-    return () => {
-      socket.close();  // Clean up WebSocket connection on unmount
+    socket.onclose = (event) => {
+      console.warn("🔁 WebSocket closed, retrying...");
+      if (!hasShownError.current && !event.wasClean) {
+        setConnectionError(true);
+        hasShownError.current = true;
+      }
+
+      // Try to reconnect after a delay
+      setTimeout(() => {
+        connectWebSocket();
+      }, 3000);
     };
-  }, []);
+  };
 
   return (
     <>
+      {/* Sliding Message Notification */}
       {showNotification && (
-        <div className="fixed top-4 right-4 w-full max-w-xs">
-          <div className="alert alert-info shadow-lg">
+        <div className="fixed top-4 right-4 z-50 animate-slide-in">
+          <div className="alert alert-info shadow-lg w-full max-w-xs">
             <div>
               <span>{message}</span>
             </div>
           </div>
         </div>
       )}
+
+      {/* Persistent Warning Notification */}
+      {connectionError && (
+        <div className="fixed top-20 right-4 z-40 animate-slide-in">
+          <div className="alert alert-warning shadow-lg w-full max-w-xs">
+            <div>
+              <span>
+                ⚠️ Cannot connect to backend WebSocket (ERRCON). Retrying silently...
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Animation Styles */}
+      <style>
+        {`
+          @keyframes slide-in {
+            0% {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            100% {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-in {
+            animation: slide-in 0.5s ease-out forwards;
+          }
+        `}
+      </style>
     </>
   );
 };
