@@ -1,9 +1,23 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-
+import { motion, AnimatePresence } from "framer-motion";
 const WebAlertTable = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedRows, setExpandedRows] = useState({});
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 200); // Show after 200px scroll
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchAlerts = async () => {
@@ -11,7 +25,6 @@ const WebAlertTable = () => {
         const response = await axios.get(
           "http://10.10.10.11:9200/uptime_kuma_alerts-*/_search?size=100&pretty=true"
         );
-        console.log(response.data); // Inspect the response to check its structure
         setAlerts(response.data.hits.hits);
       } catch (error) {
         console.error("Error fetching alerts:", error);
@@ -26,6 +39,21 @@ const WebAlertTable = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            key="scroll-top-btn"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 1 }}
+            onClick={scrollToTop}
+            className="fixed bottom-20 right-6 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 z-20"
+          >
+            Scroll To Top
+          </motion.button>
+        )}
+      </AnimatePresence>
         <h1 className="text-3xl font-bold text-gray-800">Web Alerts</h1>
       </div>
 
@@ -54,6 +82,8 @@ const WebAlertTable = () => {
             ) : (
               alerts.map((alert, index) => {
                 const { timestamp, monitor_name, message } = alert._source;
+                const isExpanded = expandedRows[alert._id];
+
                 return (
                   <tr
                     key={alert._id}
@@ -66,7 +96,28 @@ const WebAlertTable = () => {
                     </td>
                     <td className="p-3 border-r border-gray-300">{monitor_name}</td>
                     <td className="p-3 border-r border-gray-300">
-                      {message.length > 30 ? message.slice(0, 30) + "..." : message}
+                      <div>
+                        <p>
+                          {isExpanded
+                            ? message
+                            : message.length > 30
+                            ? message.slice(0, 30) + "..."
+                            : message}
+                        </p>
+                        {message.length > 30 && (
+                          <button
+                            className="text-blue-600 hover:underline text-sm mt-1"
+                            onClick={() =>
+                              setExpandedRows((prev) => ({
+                                ...prev,
+                                [alert._id]: !isExpanded,
+                              }))
+                            }
+                          >
+                            {isExpanded ? "Hide" : "View"}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -74,6 +125,8 @@ const WebAlertTable = () => {
             )}
           </tbody>
         </table>
+
+
       </div>
     </div>
   );

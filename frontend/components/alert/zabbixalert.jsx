@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-
+import { motion, AnimatePresence } from "framer-motion";
 const ZabbixAlertTable = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState({});
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 200); // Show after 200px scroll
+    };
 
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
@@ -14,7 +26,7 @@ const ZabbixAlertTable = () => {
           {
             headers: { "Content-Type": "application/json" },
             data: {
-              size: 10,
+              size: 100,
               query: { match_all: {} },
             },
           }
@@ -41,6 +53,21 @@ const ZabbixAlertTable = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            key="scroll-top-btn"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 1 }}
+            onClick={scrollToTop}
+            className="fixed bottom-20 right-6 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 z-20"
+          >
+            Scroll To Top
+          </motion.button>
+        )}
+      </AnimatePresence>
         <h1 className="text-3xl font-bold text-gray-800">Zabbix Alerts</h1>
       </div>
 

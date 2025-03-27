@@ -12,6 +12,7 @@ from customReportAPI import router as custom_report_router
 from scheduleReportAPI import router as schedule_report_router
 from database_manager_API import router as db_router
 from user_authen import router as auth_router
+from maintenance_router import router as maintenance_router
 from init_db import init_db
 # Load environment variables
 load_dotenv()
@@ -44,3 +45,4 @@ app.include_router(schedule_report_router)
 app.include_router(websocket_router)  # Include the websocket router
 app.include_router(db_router)
 app.include_router(auth_router)
+app.include_router(maintenance_router)

@@ -19,3 +19,4 @@ class Maintenance(Base):
     event = Column(String(100), nullable=False)
     changedBy = Column(String(50), nullable=False)
     notes = Column(Text)
+    status = Column(String(50), default="pending")
