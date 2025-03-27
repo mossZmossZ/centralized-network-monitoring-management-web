@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 import datetime
 import os
+
 from monthlyReport.monthly_report_generate import build_monthy_report
 from weeklyReport.weekly_report_generate import build_report_weekly
 from dailyReport.daily_report_generate import build_report_daily
@@ -11,7 +12,7 @@ class DateRequest(BaseModel):
     date: str  # The date in the format YYYY-MM-DD
 
 # Create a new router
-router = APIRouter(prefix="/api/report", tags=["report-custom"])
+router = APIRouter(prefix="/report", tags=["report-custom"])
 
 # Define the full absolute path to save the generated reports (custom_report/monthly inside the generated_reports folder)
 REPORTS_FOLDER_MONTHLY = os.path.join('generated_reports', 'custom_report', 'monthly')

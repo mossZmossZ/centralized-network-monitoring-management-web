@@ -9,7 +9,7 @@ const WebAlertTable = () => {
     const fetchAlerts = async () => {
       try {
         const response = await axios.get(
-          "http://10.10.10.11:9200/uptime_kuma_alerts-*/_search?pretty=true"
+          "http://10.10.10.11:9200/uptime_kuma_alerts-*/_search?size=100&pretty=true"
         );
         console.log(response.data); // Inspect the response to check its structure
         setAlerts(response.data.hits.hits);

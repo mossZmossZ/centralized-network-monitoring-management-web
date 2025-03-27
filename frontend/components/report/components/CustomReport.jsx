@@ -27,7 +27,7 @@ export function CustomReport() {
   // Fetch generated files from the server
   const fetchGeneratedFiles = async () => {
     try {
-      const response = await axios.get("http://localhost:8000/api/custom/files");
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/custom/files`)
       setGeneratedFiles(response.data);
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -44,7 +44,7 @@ export function CustomReport() {
 
   // Function to preview the file (PDF) in a modal
   const handlePreview = (fileType, fileName) => {
-    const fileUrl = `http://localhost:8000/api/custom/files/${fileType}/${fileName}/preview`;
+    const fileUrl = `${import.meta.env.VITE_API_URL}/custom/files/${fileType}/${fileName}/preview`;
     setPdfUrl(fileUrl); // Set PDF URL to the state
     setFileName(fileName); // Set the file name for display
     setIsModalOpen(true); // Open the modal
@@ -52,7 +52,7 @@ export function CustomReport() {
 
   // Function to download the file
   const handleDownload = (fileType, fileName) => {
-    const fileUrl = `http://localhost:8000/api/custom/files/${fileType}/${fileName}/download`;
+    const fileUrl = `${import.meta.env.VITE_API_URL}/custom/files/${fileType}/${fileName}/download`;
     const link = document.createElement("a");
     link.href = fileUrl;
     link.download = fileName; // The file name to use for the downloaded file
@@ -82,7 +82,7 @@ export function CustomReport() {
       if (result.isConfirmed) {
         try {
           const response = await axios.delete(
-            `http://localhost:8000/api/custom/files/${fileType}/${fileName}`
+            `${import.meta.env.VITE_API_URL}/custom/files/${fileType}/${fileName}`
           );
           Swal.fire('Deleted!', response.data.message, 'success');
           fetchGeneratedFiles(); // Refresh the list of files after deletion

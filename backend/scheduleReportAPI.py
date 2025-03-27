@@ -4,11 +4,13 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from dateutil.relativedelta import relativedelta
+import threading
+
 from monthlyReport.monthly_report_generate import build_monthy_report
 from weeklyReport.weekly_report_generate import build_report_weekly
 from dailyReport.daily_report_generate import build_report_daily
 from websocket_router import ws_manager
-import threading
+
 
 # Define the full absolute path to save the generated reports
 REPORTS_FOLDER_MONTHLY = os.path.join('generated_reports', 'schedule_report', 'monthly')
@@ -16,7 +18,7 @@ REPORTS_FOLDER_WEEKLY = os.path.join('generated_reports', 'schedule_report', 'we
 REPORTS_FOLDER_DAILY = os.path.join('generated_reports', 'schedule_report', 'daily')
 
 # FastAPI Router for Schedule Reports (No need for manual triggering)
-router = APIRouter(prefix="/api/report", tags=["report-schedule"])
+router = APIRouter(prefix="/report", tags=["report-schedule"])
 
 # Ensure the reports folder exists (create if it doesn't)
 for folder in [REPORTS_FOLDER_MONTHLY, REPORTS_FOLDER_WEEKLY, REPORTS_FOLDER_DAILY]:

@@ -41,12 +41,13 @@ export function GenerateReportModal({ setIsGenerateModalOpen }) {
         // Determine the correct API endpoint based on the selected report type
         let apiUrl = "";
         if (reportType === "Daily-Report") {
-          apiUrl = "http://localhost:8000/api/report/custom-daily-report";
+          apiUrl = `${import.meta.env.VITE_API_URL}/report/custom-daily-report`;
         } else if (reportType === "Weekly-Report") {
-          apiUrl = "http://localhost:8000/api/report/custom-weekly-report";
+          apiUrl = `${import.meta.env.VITE_API_URL}/report/custom-weekly-report`;
         } else if (reportType === "Monthly-Report") {
-          apiUrl = "http://localhost:8000/api/report/custom-monthly-report";
+          apiUrl = `${import.meta.env.VITE_API_URL}/report/custom-monthly-report`;
         }
+
   
         // Send Axios request to generate the report
         const response = await axios.post(apiUrl, {

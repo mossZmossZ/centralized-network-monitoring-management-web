@@ -17,12 +17,14 @@ export function Services() {
             <h3 className="card-title">Grafana</h3>
             <p>Monitor and analyze system and application activities, aligned with ISO/IEC 27001 A.8.16 and TIA-942 Monitoring & Alerting standards.</p>
             <div className="card-actions justify-end">
-              <a
-                href="#get-started"
-                className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
-              >
-                Get Started
-              </a>
+            <a
+              href={`${import.meta.env.VITE_GRAFANA_URL}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
+            >
+              Get Started
+            </a>
             </div>
           </div>
         </div>
@@ -40,12 +42,14 @@ export function Services() {
             <h3 className="card-title">Uptimekuma</h3>
             <p>Self-hosted status monitoring solution to ensure redundancy and uptime in your services, in line with TIA-942 Redundant Cabling standards.</p>
             <div className="card-actions justify-end">
-              <a
-                href="#get-started"
-                className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
-              >
-                Get Started
-              </a>
+            <a
+              href={`${import.meta.env.VITE_UPTIME_URL}`} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
+            >
+              Get Started
+            </a>
             </div>
           </div>
         </div>
@@ -63,12 +67,14 @@ export function Services() {
             <h3 className="card-title">Zabbix</h3>
             <p>Monitor IT infrastructure and network services, aligning with ISO/IEC 27001 A.8.21 and A.8.22, and ensuring network security and segregation, in line with TIA-942 standards.</p>
             <div className="card-actions justify-end">
-              <a
-                href="#get-started"
-                className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
-              >
-                Get Started
-              </a>
+            <a
+              href={`${import.meta.env.VITE_ZABBIX_URL}`} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
+            >
+              Get Started
+            </a>
             </div>
           </div>
         </div>
@@ -86,12 +92,14 @@ export function Services() {
             <h3 className="card-title">Opensearch</h3>
             <p>Search, analyze, and visualize logs for auditing and internal compliance, aligned with ISO/IEC 27001 A.9.2 Internal Audit and A.10.2 Corrective Action standards.</p>
             <div className="card-actions justify-end">
-              <a
-                href="#get-started"
-                className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
-              >
-                Get Started
-              </a>
+            <a
+              href={`${import.meta.env.VITE_OEPNSEARCH_URL}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
+            >
+              Get Started
+            </a>
             </div>
           </div>
         </div>
@@ -110,7 +118,7 @@ export function Services() {
             <p>Generate scheduled reports with ISO 27001 compliance, supporting performance monitoring, and compliance evaluation as per A.9.1.</p>
             <div className="card-actions justify-end">
               <a
-                href="#get-started"
+                href="/report"
                 className="btn btn-primary transition-transform duration-200 hover:scale-105 active:scale-95"
               >
                 Get Started

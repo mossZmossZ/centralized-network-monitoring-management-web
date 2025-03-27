@@ -9,7 +9,7 @@ export function Alert() {
   const [loading, setLoading] = useState(false);
   const [selectedTable, setSelectedTable] = useState("Zabbix");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  
   const sendTestAlert = async () => {
     if (!alertMessage.trim()) {
       Swal.fire("Warning", "Please enter a message before sending!", "warning");
@@ -18,7 +18,7 @@ export function Alert() {
   
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/send_alert", {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/send_alert`, {
         message: alertMessage,
       });
   

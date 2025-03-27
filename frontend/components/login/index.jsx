@@ -1,8 +1,94 @@
+import { motion } from "framer-motion";
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
 export function Login() {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-6">
-        <h1 className="text-3xl font-bold">Login</h1>
-        <p className="mt-2 text-gray-600">Login page here.</p>
-      </div>
-    );
-  }
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault(); // ✅ prevent default form reload
+
+    try {
+      const res = await axios.post(
+        "http://localhost:8000/api/auth/token",
+        new URLSearchParams({
+          username,
+          password
+        }),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          }
+        }
+      );
+
+      localStorage.setItem("token", res.data.access_token);
+      window.location.href = "/services";
+    } catch (err) {
+      setError("Invalid credentials");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#faf7f5] via-[#f1f2f4] to-[#e8eaed] p-4">
+      <motion.div
+        className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md"
+        initial={{ opacity: 0, y: 80 }}
+        animate={{ opacity: 1, y: -100 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
+          Welcome to Centralized Network Monitoring
+        </h2>
+
+        {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+
+        {/* ✅ wrap in form to capture Enter key */}
+        <form onSubmit={handleLogin}>
+          <div className="form-control w-full mb-4">
+            <label className="label">
+              <span className="label-text">Username</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Enter your username"
+              className="input input-bordered w-full"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-control w-full mb-6">
+            <label className="label">
+              <span className="label-text">Password</span>
+            </label>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              className="input input-bordered w-full"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary w-full">
+            Login
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-gray-500">
+          Don’t have an account?{" "}
+          <a href="#" className="text-purple-600 hover:underline">
+            Tell Admin
+          </a>
+        </p>
+      </motion.div>
+    </div>
+  );
+}
