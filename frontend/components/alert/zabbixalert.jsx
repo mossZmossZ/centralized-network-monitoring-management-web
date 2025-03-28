@@ -21,16 +21,17 @@ const ZabbixAlertTable = () => {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const response = await axios.get(
+        const response = await axios.post(
           "http://10.10.10.11:9200/zabbix_alerts-*/_search?pretty=true",
           {
+            size: 100, // Requesting 100 rows
+            query: { match_all: {} },
+          },
+          {
             headers: { "Content-Type": "application/json" },
-            data: {
-              size: 100,
-              query: { match_all: {} },
-            },
           }
         );
+        
         setAlerts(response.data.hits.hits);
       } catch (error) {
         console.error("Error fetching Zabbix alerts:", error);

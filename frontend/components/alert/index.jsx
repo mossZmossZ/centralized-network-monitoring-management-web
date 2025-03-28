@@ -3,6 +3,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import WebAlertTable from "./webalert";
 import ZabbixAlertTable from "./zabbixalert";
+import SuricataAlertTable from "./suricataalert";
 
 export function Alert() {
   const [alertMessage, setAlertMessage] = useState("");
@@ -43,7 +44,7 @@ export function Alert() {
       case "Web":
         return <WebAlertTable />; // Render the WebAlertTable component
       case "Suricata":
-        return <div>Content for Suricata Alert</div>;
+        return <SuricataAlertTable />;
       default:
         return <div>Select a table</div>;
     }

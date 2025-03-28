@@ -17,7 +17,7 @@ export function User() {
       setUsername(res.data.username);
     } catch {
       localStorage.removeItem("token");
-      navigate("/login");
+      window.location.href = "/login";
     }
   };
 

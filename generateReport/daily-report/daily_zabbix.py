@@ -37,6 +37,7 @@ def get_discovered_hosts_group_id():
     }
     response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
     data = response.json()
+    print(data)
     if "error" in data:
         print("Error fetching host group:", data["error"])
         return None
@@ -414,11 +415,11 @@ def get_cpu_itemid(host_id):
     return None
 
 if __name__ == "__main__":
-    # problem_data = get_problem_graph()  # Fetch problem history for today
-    # print(problem_data)  # Print final structured data
-    # print(get_today_zabbix_problem())
+    #problem_data = get_problem_graph()  # Fetch problem history for today
+    #print(problem_data)  # Print final structured data
+     print(get_today_zabbix_problem())
     # print(count_today_problems())
-    print(get_today_server_problem())
-    print(count_today_server_problems())
+    #print(get_today_server_problem())
+    #print(count_today_server_problems())
     #print(get_today_cpu_usage())
     #print(get_all_cpu_items(10084))
