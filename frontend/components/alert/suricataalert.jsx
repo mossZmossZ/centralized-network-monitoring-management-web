@@ -30,10 +30,21 @@ const SuricataAlertTable = () => {
           "http://10.10.10.11:9200/suricata-*/_search?pretty=true",
           {
             size: 100, // Fetching 100 results
-            query: { match_all: {} },
+            query: {
+              bool: {
+                must: [
+                  { match: { event_type: "alert" } },
+                  { terms: { "alert.severity": [2, 3] } },
+                  { range: { "@timestamp": { gte: "now-24h", lte: "now" } } }
+                ]
+              }
+            },
+            sort: [
+              { "@timestamp": { order: "desc" } }
+            ]
           },
           {
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" }
           }
         );
         setAlerts(response.data.hits.hits);
@@ -46,22 +57,12 @@ const SuricataAlertTable = () => {
 
     fetchAlerts();
   }, []);
-  const {
-    timestamp,
-    src_ip,
-    dest_ip,
-    alert: alertData, // Renamed here to avoid conflict
-  } = alert._source || {};
-  
-  // Handle possible null/undefined values
-  const signature = alertData?.signature || "N/A";
-  const severity = alertData?.severity !== undefined ? alertData.severity : "N/A";
-  
+
   // Format time in 24-hour format (DD/MM/YYYY, HH:mm:ss) with Thailand's local time
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleString("en-GB", {
-      hour12: false, // 24-hour format
+      hour12: false // 24-hour format
     });
   };
 
@@ -96,79 +97,57 @@ const SuricataAlertTable = () => {
               <th className="p-3 border-r border-gray-400 text-left">Time</th>
               <th className="p-3 border-r border-gray-400 text-left">Src IP</th>
               <th className="p-3 border-r border-gray-400 text-left">Dest IP</th>
-              <th className="p-3 border-r border-gray-400 text-left">
-                Signature
-              </th>
-              <th className="p-3 border-r border-gray-400 text-left">
-                Severity
-              </th>
+              <th className="p-3 border-r border-gray-400 text-left">Signature</th>
+              <th className="p-3 border-r border-gray-400 text-left">Severity</th>
             </tr>
           </thead>
-       
-            {/* Show loading indicator */}
-            <tbody>
+
+          {/* Show loading indicator */}
+          <tbody>
             {loading ? (
-                <tr>
-                <td colSpan="5" className="p-3 text-center">Loading...</td>
-                </tr>
+              <tr>
+                <td colSpan="5" className="p-3 text-center">
+                  Loading...
+                </td>
+              </tr>
             ) : alerts.length === 0 ? (
-                <tr>
-                <td colSpan="5" className="p-3 text-center">No alerts found</td>
-                </tr>
+              <tr>
+                <td colSpan="5" className="p-3 text-center">
+                  No alerts found
+                </td>
+              </tr>
             ) : (
-                alerts
-                .filter((alert) => {
-                    // Extracting the required fields and checking for null/undefined values
-                    const { timestamp, src_ip, dest_ip, alert: alertData } =
-                    alert._source || {};
-                    const signature = alertData?.signature || "N/A";
-                    const severity =
-                    alertData?.severity !== undefined ? alertData.severity : "N/A";
+              alerts.map((alert, index) => {
+                const {
+                  timestamp,
+                  src_ip,
+                  dest_ip,
+                  alert: alertData
+                } = alert._source || {};
 
-                    // Return true only if all required fields have valid data (not N/A or undefined)
-                    return (
-                    timestamp &&
-                    src_ip !== "N/A" &&
-                    dest_ip !== "N/A" &&
-                    signature !== "N/A" &&
-                    severity !== "N/A"
-                    );
-                })
-                .map((alert, index) => {
-                    const {
-                    timestamp,
-                    src_ip,
-                    dest_ip,
-                    alert: alertData,
-                    } = alert._source || {};
+                const signature = alertData?.signature || "N/A";
+                const severity =
+                  alertData?.severity !== undefined ? alertData.severity : "N/A";
 
-                    const signature = alertData?.signature || "N/A";
-                    const severity =
-                    alertData?.severity !== undefined ? alertData.severity : "N/A";
-
-                    return (
-                    <tr
-                        key={alert._id}
-                        className={`border-b border-gray-300 ${
-                        index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                        }`}
-                    >
-                        <td className="p-3 border-r border-gray-300">
-                        {timestamp ? formatTime(timestamp) : "N/A"}
-                        </td>
-                        <td className="p-3 border-r border-gray-300">{src_ip}</td>
-                        <td className="p-3 border-r border-gray-300">{dest_ip}</td>
-                        <td className="p-3 border-r border-gray-300">{signature}</td>
-                        <td className="p-3 border-r border-gray-300">{severity}</td>
-                    </tr>
-                    );
-                })
+                return (
+                  <tr
+                    key={alert._id}
+                    className={`border-b border-gray-300 ${
+                      index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                    }`}
+                  >
+                    <td className="p-3 border-r border-gray-300">
+                      {timestamp ? formatTime(timestamp) : "N/A"}
+                    </td>
+                    <td className="p-3 border-r border-gray-300">{src_ip}</td>
+                    <td className="p-3 border-r border-gray-300">{dest_ip}</td>
+                    <td className="p-3 border-r border-gray-300">{signature}</td>
+                    <td className="p-3 border-r border-gray-300">{severity}</td>
+                  </tr>
+                );
+              })
             )}
-            </tbody>
-
-
-
-       
+          </tbody>
         </table>
       </div>
     </div>

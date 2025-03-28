@@ -28,12 +28,13 @@ zabbix_count_server = count_today_server_problems()
 
 uptime_web_issue = json.loads(get_monitor_down_day())
 uptime_web_downtime = json.loads(get_graph_down_day())
+
+
 uptime_count_day = json.loads(get_down_count_day())
 
 suricata_threat = get_threat_summary()
 suricata_graph = get_graph_threats()
-print(zabbix_network_issues)
-print(zabbix_problem_history)
+
 
 # Get current date in "YYYY-MM-DD" format
 current_date = datetime.now().strftime("%Y-%m-%d")
@@ -350,10 +351,10 @@ def build_report(filename):
 
     # Add section title
     story.append(Paragraph("Web Application Section", styles["Heading2"]))
-
+    print(api_response.get("web_issues", []))
     # Fetch web issues data from API response
     web_data = [["Time", "Host", "Status", "Message"]] + api_response.get("web_issues", [])
-
+    
     # Define table properties
     t_web = Table(
         web_data,
@@ -378,8 +379,9 @@ def build_report(filename):
     # ------------------------------------------------------------------------
 
     # Fetch web downtime data from API response
+    
     api_web_downtime = api_response.get("web_downtime", {})
-
+    
     # Define expected time slots for a 24-hour report (6-hour intervals)
     time_slots_web_downtime = ["00:00 - 06:00", "06:00 - 12:00", "12:00 - 18:00", "18:00 - 00:00"]
 
