@@ -100,7 +100,7 @@ def get_monitor_down_day():
 
             # Cut issue description to 50 characters max
             issue_description = (
-                issue_description[:50] + "..." if len(issue_description) > 50 else issue_description
+                issue_description[:25] + "..." if len(issue_description) > 25 else issue_description
             )
 
             # Format timestamp to readable format
@@ -125,7 +125,7 @@ def get_graph_down_day():
         "query": {
             "bool": {
                 "must": [
-                    {"range": {"@timestamp": {"gte": "now/d", "lte": "now"}}},  # Today from 00:00 to now
+                    {"range": {"@timestamp": {"gte": "now-24h", "lte": "now"}}},  # Today from 00:00 to now
                     {"match_phrase": {"message": "Down"}}
                 ]
             }

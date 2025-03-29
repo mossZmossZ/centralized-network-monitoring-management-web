@@ -34,7 +34,6 @@ def fetch_suricata_alerts():
                 "must": [
                     {"range": {"@timestamp": {"gte": past_24_hours}}},
                     {"match": {"event_type": "alert"}},
-                    {"terms": {"alert.severity": [2, 3]}}  # ดึงเฉพาะ severity 2 และ 3
                 ]
             }
         },
@@ -61,9 +60,8 @@ def fetch_suricata_alerts():
 
         signature = alert_info.get("signature", "Unknown Threat")
         signature_id = str(alert_info.get("signature_id", "0"))
-        severity = alert_info.get("severity", "N/A")  # เพิ่มระดับ severity ลงไป
         
-        alerts.append((timestamp, signature, signature_id, severity))
+        alerts.append((timestamp, signature, signature_id))
 
     return alerts
 
@@ -95,7 +93,7 @@ def get_threat_summary():
     
     top_10_threats = [
         [data["last_hit"], short_signature, str(data["count"])]
-        for (short_signature, sig_id, severity), data in sorted_threats[:10]
+        for (short_signature, _), data in sorted_threats[:10]
     ]
 
     return {"threats_detected": top_10_threats}
@@ -120,7 +118,7 @@ def get_graph_threats():
     if current_slot_index is None:
         return {"threats_history": {}}
 
-    for timestamp, signature, sig_id, severity in alerts:
+    for timestamp, signature, sig_id in alerts:
         short_signature = extract_short_signature(signature)
         parsed_time = parser.isoparse(timestamp)  # Assuming the timestamp is in local time
         parsed_date = parsed_time.strftime("%Y-%m-%d")

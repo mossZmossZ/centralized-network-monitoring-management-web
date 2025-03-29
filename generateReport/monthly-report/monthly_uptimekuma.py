@@ -102,7 +102,7 @@ def get_monitor_down_month():
 
             # Cut issue description to 50 characters max
             issue_description = (
-                issue_description[:50] + "..." if len(issue_description) > 50 else issue_description
+                issue_description[:25] + "..." if len(issue_description) > 25 else issue_description
             )
 
             # Format timestamp to readable format
@@ -122,7 +122,7 @@ def get_monitor_down_month():
         return json.dumps({"error": f"Error connecting to OpenSearch: {str(e)}"}, indent=4)
 
 
-def get_graph_down_day():
+def get_graph_down_month():
     query = {
         "query": {
             "bool": {
@@ -172,7 +172,7 @@ def get_graph_down_day():
 
     return json.dumps({"web_downtime": web_downtime}, indent=4)
 
-def get_down_count_day():
+def get_down_count_month():
     monitor_down_data = json.loads(get_monitor_down_month())
     down_count = len(monitor_down_data.get("web_issues", []))
     return json.dumps({"Web Application": down_count}, indent=4)
