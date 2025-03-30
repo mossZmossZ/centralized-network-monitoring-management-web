@@ -52,7 +52,7 @@ export default function MobileNavbar() {
 
                 <li className="font-bold">Menu</li>
                 <li><button onClick={() => handleMobileNavigation("/user")}>User</button></li>
-                <li><button onClick={() => handleMobileNavigation("/docs")}>Docs</button></li>
+                {/*<li><button onClick={() => handleMobileNavigation("/docs")}>Docs</button></li>*/}
                 <li><button onClick={() => handleMobileNavigation("/about")}>About</button></li>
 
                 <li className="mt-4">

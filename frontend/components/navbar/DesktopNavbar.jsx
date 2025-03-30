@@ -49,7 +49,7 @@ export default function DesktopNavbar({ closeDropdowns }) {
                 <summary>Menu</summary>
                 <ul className="absolute z-50 bg-white/50 backdrop-blur-md border border-gray-300 rounded-lg p-2">
                   <li><Link to="/user" onClick={closeDropdowns}>User</Link></li>
-                  <li><Link to="/docs" onClick={closeDropdowns}>Docs</Link></li>
+                  {/*<li><Link to="/docs" onClick={closeDropdowns}>Docs</Link></li>}*/}
                   <li><Link to="/about" onClick={closeDropdowns}>About</Link></li>
                   <li>
                     <button onClick={handleLogout} className="text-left w-full text-red-500 hover:underline">
