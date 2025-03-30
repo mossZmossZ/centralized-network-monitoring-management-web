@@ -5,25 +5,29 @@ import axios from "axios";
 export function User() {
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
-  
+
+  // Use VITE_API_URL from environment variables
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
   const fetchUser = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
     try {
-      const res = await axios.get("http://localhost:8000/api/auth/me", {
+      // Correct URL using VITE_API_URL
+      const res = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsername(res.data.username);
     } catch {
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      navigate("/login"); // Use navigate instead of window.location.href
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    navigate("/login");
   };
 
   useEffect(() => {

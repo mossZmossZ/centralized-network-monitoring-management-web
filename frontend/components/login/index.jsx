@@ -1,28 +1,32 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+
 
 export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  
+
+  // ✅ Use VITE_API_URL from .env file
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // ✅ prevent default form reload
+    e.preventDefault(); // ✅ Prevent default form reload
 
     try {
+      // Use VITE_API_URL dynamically
       const res = await axios.post(
-        "http://localhost:8000/api/auth/token",
+        `${API_URL}/auth/token`, // Dynamically use API URL
         new URLSearchParams({
           username,
-          password
+          password,
         }),
         {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
-          }
+          },
         }
       );
 
@@ -47,7 +51,7 @@ export function Login() {
 
         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
-        {/* ✅ wrap in form to capture Enter key */}
+        {/* ✅ Wrap in form to capture Enter key */}
         <form onSubmit={handleLogin}>
           <div className="form-control w-full mb-4">
             <label className="label">

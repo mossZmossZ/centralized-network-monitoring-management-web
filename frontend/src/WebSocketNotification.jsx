@@ -7,13 +7,18 @@ const WebSocketNotification = () => {
   const hasShownError = useRef(false);
   const socketRef = useRef(null);
 
+  // ✅ Use VITE_API_URL from .env for WebSocket URL
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     connectWebSocket();
     return () => socketRef.current?.close();
   }, []);
 
   const connectWebSocket = () => {
-    const socket = new WebSocket("ws://localhost:8000/ws/notify");
+    // ✅ Dynamically use WebSocket URL based on API URL
+    const wsUrl = API_URL.replace("http", "ws") + "/ws/notify";
+    const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {

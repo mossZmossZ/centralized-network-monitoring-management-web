@@ -14,11 +14,15 @@ export function Maintenance() {
     notes: "",
     status: "pending",
   });
+
+  // ✅ Use VITE_API_URL from .env file
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
   const sendAlert = async (message) => {
     if (!message.trim()) return;
-  
+
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/send_alert`, {
+      await axios.post(`${API_URL}/send_alert`, {
         message,
       });
       console.log("Alert sent.");
@@ -26,12 +30,12 @@ export function Maintenance() {
       console.error("Failed to send alert:", error);
     }
   };
-  
+
   const token = localStorage.getItem("token");
 
   const fetchChanges = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/maintenance/", {
+      const res = await axios.get(`${API_URL}/maintenance/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setChanges(res.data);
@@ -51,13 +55,13 @@ export function Maintenance() {
     try {
       if (editMode && editingId) {
         // 🆕 PUT update
-        await axios.put(`http://localhost:8000/maintenance/${editingId}`, newChange, {
+        await axios.put(`${API_URL}/maintenance/${editingId}`, newChange, {
           headers: { Authorization: `Bearer ${token}` },
         });
         Swal.fire("Updated", "Change updated successfully", "success");
       } else {
         // POST new
-        await axios.post("http://localhost:8000/maintenance/", newChange, {
+        await axios.post(`${API_URL}/maintenance/`, newChange, {
           headers: { Authorization: `Bearer ${token}` },
         });
         Swal.fire("Created", "Change added successfully", "success");
@@ -102,7 +106,7 @@ export function Maintenance() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8000/maintenance/${id}`, {
+        await axios.delete(`${API_URL}/maintenance/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         Swal.fire("Deleted", "Log deleted successfully", "success");
