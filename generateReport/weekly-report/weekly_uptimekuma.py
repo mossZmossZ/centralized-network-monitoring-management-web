@@ -175,7 +175,7 @@ def get_down_count_week():
     down_count = len(monitor_down_data.get("web_issues", []))
     return json.dumps({"Web Application": down_count}, indent=4)
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
     #print(get_monitor_down_week())
-#     print(get_graph_down_week())
+    print(get_graph_down_week())
 #     #print(get_down_count_week())

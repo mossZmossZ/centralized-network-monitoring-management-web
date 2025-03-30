@@ -178,7 +178,7 @@ def get_down_count_month():
     return json.dumps({"Web Application": down_count}, indent=4)
 
 if __name__ == "__main__":
-    print(get_monitor_down_month())
-    #print(get_graph_down_day())
+    #print(get_monitor_down_month())
+    print(get_graph_down_month())
     #print(get_down_count_day())
     #print(get_all_monitor_status())

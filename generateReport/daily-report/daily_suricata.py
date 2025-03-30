@@ -76,9 +76,9 @@ def get_threat_summary():
     alerts = fetch_suricata_alerts()  # Assuming this returns a list of [timestamp, signature, sig_id]
     threat_data = {}
 
-    for timestamp, signature, sig_id, severity in alerts:
+    for timestamp, signature, sig_id in alerts:
         short_signature = extract_short_signature(signature)  # Use extracted signature category
-        key = (short_signature, sig_id, severity)
+        key = (short_signature, sig_id)
 
         converted_time = parser.isoparse(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
