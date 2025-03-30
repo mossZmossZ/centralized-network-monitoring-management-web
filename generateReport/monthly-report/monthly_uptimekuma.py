@@ -123,26 +123,32 @@ def get_monitor_down_month():
 
 
 def get_graph_down_month():
+    """Fetch and classify 'Down' monitors by day slots for the last 30 days."""
     query = {
         "query": {
             "bool": {
                 "must": [
-                    {"range": {"@timestamp": {"gte": "now-30d/d", "lte": "now"}}},  # Today from 00:00 to now
+                    {"range": {"@timestamp": {"gte": "now-30d/d", "lte": "now"}}},  # Last 30 days
                     {"match_phrase": {"message": "Down"}}
                 ]
             }
-        }
+        },
+        "size": 1000,  # Increase size if needed
+        "sort": [
+            {"@timestamp": {"order": "desc"}}
+        ]
     }
 
     auth = (USER, PASSWORD) if USER and PASSWORD else None
 
     try:
-        response = requests.get(
+        # ✅ Change to POST request
+        response = requests.post(
             f"{BASE_URL}/{INDEX_NAME}/_search",
             headers={"Content-Type": "application/json"},
             auth=auth,
             data=json.dumps(query),
-            verify=False  # Ignore SSL verification issues if necessary
+            verify=False  # Ignore SSL verification if necessary
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
@@ -151,26 +157,35 @@ def get_graph_down_month():
     data = response.json()
     hits = data.get("hits", {}).get("hits", [])
 
-    # Initialize web_downtime with zero counts for all time slots
+    # ✅ Initialize web_downtime with zero counts for all time slots
     web_downtime = {monitor: {slot: 0 for slot in TIME_SLOTS} for monitor in ALLOWED_MONITORS}
 
     for hit in hits:
         source = hit["_source"]
-        timestamp = source.get("@timestamp", "")
         monitor_name = source.get("monitor_name", "Unknown")
 
         if monitor_name not in ALLOWED_MONITORS:
             continue
 
-        dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+        timestamp = source.get("@timestamp", "")
+        
+        # ✅ Handle different timestamp formats
+        try:
+            dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
+
         day = dt.day
 
+        # ✅ Classify into day slots (01-05, 06-10, etc.)
         for slot, days in TIME_SLOTS.items():
             if day in days:
-                web_downtime[monitor_name][slot] += 1  # เพิ่มจำนวน down ในช่วงนั้น
+                web_downtime[monitor_name][slot] += 1
                 break
 
+    # 🎯 Return results as JSON
     return json.dumps({"web_downtime": web_downtime}, indent=4)
+
 
 def get_down_count_month():
     monitor_down_data = json.loads(get_monitor_down_month())
@@ -178,7 +193,7 @@ def get_down_count_month():
     return json.dumps({"Web Application": down_count}, indent=4)
 
 if __name__ == "__main__":
-    #print(get_monitor_down_month())
+    print(get_monitor_down_month())
     print(get_graph_down_month())
     #print(get_down_count_day())
     #print(get_all_monitor_status())

@@ -6,9 +6,9 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from dateutil.relativedelta import relativedelta
 import threading
 
-from monthlyReport.monthly_report_generate import build_monthy_report
-from weeklyReport.weekly_report_generate import build_report_weekly
-from dailyReport.daily_report_generate import build_report_daily
+from monthly_report_generate import build_monthy_report
+from weekly_report_generate import build_report_weekly
+from daily_report_generate import build_report_daily
 from websocket_router import ws_manager
 
 

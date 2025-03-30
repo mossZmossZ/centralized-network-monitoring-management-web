@@ -1,19 +1,17 @@
 import os
 import requests
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from collections import defaultdict
-from dotenv import load_dotenv
 from pathlib import Path
 
 # Assuming your .env is in the project root
 dotenv_path = Path(__file__).resolve().parents[1] / '.env'
 load_dotenv(dotenv_path)
 
-
 ZABBIX_SERVER = os.getenv("ZABBIX_SERVER")
 ZABBIX_API_TOKEN = os.getenv("ZABBIX_API_TOKEN")
 ZABBIX_API_URL = f"{ZABBIX_SERVER}/api_jsonrpc.php"
-
 
 time_slots = {
     "01-05": range(1, 6),
@@ -24,13 +22,6 @@ time_slots = {
     "26-31": range(26, 32),
 }
 time_slots_cpu = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
-
-
-category_map = {
-    "Link Down": ["link down"],
-    "Speed Change": ["ethernet has changed to lower speed", "speed change"],
-    "Port Failure": ["port failure", "interface failure", "port issue"]
-}
 
 def get_discovered_hosts_group_id():
     headers = {
@@ -49,6 +40,7 @@ def get_discovered_hosts_group_id():
     }
     response = requests.post(ZABBIX_API_URL, json=payload, headers=headers)
     data = response.json()
+    print(data)
     if "error" in data:
         print("Error fetching host group:", data["error"])
         return None
@@ -84,20 +76,22 @@ def get_Zabbix_servers_group_id():
 
 
 def get_month_server_problem():
+    """Fetch server issues from the past 24 hours and return a shortened list."""
+
     group_id = get_Zabbix_servers_group_id()
     if not group_id:
         print("Could not find 'Zabbix servers' group.")
         return []
-    
+
     now = datetime.now()
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0)
-    
-    time_from = int(start_of_month.timestamp())  
-    time_to = int(now.timestamp())  
+
+    time_from = int(start_of_month.timestamp())
+    time_to = int(now.timestamp())
 
     HEADERS = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"  
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
     }
 
     payload = {
@@ -107,14 +101,14 @@ def get_month_server_problem():
             "output": ["clock", "name", "objectid"],
             "selectHosts": ["host"],
             "selectAlerts": ["message"],
-            "groupids": [group_id],  
-            "source": 0,  
-            "value": 1,   
+            "groupids": [group_id],
+            "source": 0,  # Triggers only
+            "value": 1,  # Problems only
             "time_from": time_from,
             "time_till": time_to,
             "sortfield": ["clock"],
             "sortorder": "DESC",
-            "limit": 500  
+            "limit": 1000
         },
         "auth": None,
         "id": 1
@@ -128,42 +122,33 @@ def get_month_server_problem():
         return []
 
     server_issues = []
-    
+
     for issue in data.get("result", []):
         timestamp = datetime.fromtimestamp(int(issue["clock"]))
-        formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")  # ✅ 24-hour format
-        
+        formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
         host = issue["hosts"][0]["host"] if "hosts" in issue and issue["hosts"] else "Unknown"
         full_problem_description = issue.get("name", "Unknown Issue")
-        problem_type = extract_problem_type(full_problem_description)
 
+        # Cut problem description to 30 characters if too long
+        shortened_description = (
+            full_problem_description[:30] + "..." if len(full_problem_description) > 30 else full_problem_description
+        )
+
+        # Calculate duration since the problem started
         duration_seconds = int(now.timestamp()) - int(issue["clock"])
         days, remainder = divmod(duration_seconds, 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes = remainder // 60
         duration_str = f"{days}d {hours}h {minutes}m"
 
-        server_issues.append([formatted_time, host, problem_type, duration_str])
+        server_issues.append([formatted_time, host, shortened_description, duration_str])
 
     return {"os_issues": server_issues}
-  
-
-def extract_problem_type(description):
-    problem_keywords = [
-        "link down", "speed change", "disk full", "high memory usage",
-        "cpu high", "icmp unreachable", "no snmp data collection",
-        "power supply warning", "temperature warning"
-    ]
-
-    for keyword in problem_keywords:
-        if keyword in description.lower():
-            return keyword.title()  
-
-    return "Other Issue"
 
 def get_month_zabbix_problem():
-    """Fetch Zabbix problems from the past 24 hours with a 24-hour format."""
-    
+    """Fetch Zabbix problems from the past 24 hours and return a shortened list."""
+
     group_id = get_discovered_hosts_group_id()
     if not group_id:
         print("Could not find 'Discovered Hosts' group.")
@@ -174,11 +159,11 @@ def get_month_zabbix_problem():
     end_of_month = (start_of_month + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
 
     time_from = int(start_of_month.timestamp())  
-    time_to = int(end_of_month.timestamp())  
+    time_to = int(end_of_month.timestamp())
 
     HEADERS = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"  
+        "Authorization": f"Bearer {ZABBIX_API_TOKEN}"
     }
 
     payload = {
@@ -188,14 +173,14 @@ def get_month_zabbix_problem():
             "output": ["clock", "name", "objectid"],
             "selectHosts": ["host"],
             "selectAlerts": ["message"],
-            "groupids": [group_id],  
-            "source": 0,  
-            "value": 1,  
+            "groupids": [group_id],
+            "source": 0,  # Triggers only
+            "value": 1,  # Problems only
             "time_from": time_from,
             "time_till": time_to,
             "sortfield": ["clock"],
             "sortorder": "DESC",
-            "limit": 500  
+            "limit": 500
         },
         "auth": None,
         "id": 1
@@ -208,39 +193,44 @@ def get_month_zabbix_problem():
         print("Error:", data["error"])
         return []
 
-    issue_counts = defaultdict(lambda: {"time": None, "count": 0, "timestamp": 0})
+    issue_counts = defaultdict(lambda: {"time": None, "count": 0, "timestamp": 0, "full_issue": ""})
 
     for issue in data.get("result", []):
         timestamp = int(issue["clock"])
-        formatted_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")  # 24-hour format
+        formatted_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
         host = issue["hosts"][0]["host"] if "hosts" in issue and issue["hosts"] else "Unknown"
         full_problem_description = issue.get("name", "Unknown Issue")
 
-        problem_type = "Other Issue"
-        for category, keywords in category_map.items():
-            if any(keyword in full_problem_description.lower() for keyword in keywords):
-                problem_type = category
-                break
+        # Remove device name before colon (e.g., FortiGate: -> just the description)
+        if ":" in full_problem_description:
+            description = full_problem_description.split(":", 1)[-1].strip()
+        else:
+            description = full_problem_description
 
-        key = (host, problem_type)
+        # Shorten the problem description to 25 characters max
+        shortened_description = (
+            description[:25] + "..." if len(description) > 25 else description
+        )
 
-        if problem_type == "Link Down":
+        key = (host, full_problem_description)
+
+        if key not in issue_counts:
             issue_counts[key]["time"] = formatted_time
             issue_counts[key]["timestamp"] = timestamp
-            issue_counts[key]["count"] += 1
-        else:
-            if issue_counts[key]["time"] is None:
-                issue_counts[key]["time"] = formatted_time
-                issue_counts[key]["timestamp"] = timestamp
-            issue_counts[key]["count"] += 1
+            issue_counts[key]["full_issue"] = shortened_description
+
+        issue_counts[key]["count"] += 1
 
     formatted_issues = sorted(
-        [[info["time"], host, problem, info["count"]] for (host, problem), info in issue_counts.items()],
-        key=lambda x: (-x[3], -datetime.strptime(x[0], "%Y-%m-%d %H:%M:%S").timestamp())  
+        [
+            [info["time"], host, info["full_issue"], info["count"]]
+            for (host, problem), info in issue_counts.items()
+        ],
+        key=lambda x: (-x[3], -datetime.strptime(x[0], "%Y-%m-%d %H:%M:%S").timestamp())
     )
 
-    return {"network_issues": formatted_issues} 
+    return {"network_issues": formatted_issues}
 
 
 def get_problem_graph():
@@ -248,29 +238,32 @@ def get_problem_graph():
     raw_issues = raw_issues_data.get("network_issues", [])  
 
     now = datetime.now()
-    start_of_today = datetime(now.year, now.month, 1, 0, 0)  # เริ่มต้นเดือน
+    start_of_today = datetime(now.year, now.month, 1, 0, 0)  # Today 00:00
 
     problem_history = defaultdict(lambda: {slot: 0 for slot in time_slots.keys()})
-    has_valid_data = False  
+    has_valid_data = False  # Track if at least one issue is counted
 
     for issue in raw_issues:
         formatted_time, host, problem_type, duration = issue  
         event_dt = datetime.strptime(formatted_time, "%Y-%m-%d %H:%M:%S")
 
+        # Skip issues before 00:00 today
         if event_dt < start_of_today:
             continue  
 
-        event_day = event_dt.day  
+        event_day = event_dt.day  # Extract hour from event
 
+        # Assign the issue to the correct time slot
         for slot, day_range in time_slots.items():
             if event_day in day_range:
                 problem_history[problem_type][slot] += duration
                 has_valid_data = True
                 break
 
+    # If no valid issues were found for today, return "No Data"
     if not has_valid_data:
         return {"problem_history": {"No Data": {slot: 0 for slot in time_slots.keys()}}}
-
+    
     return {"problem_history": dict(problem_history)}
 
 
@@ -322,13 +315,13 @@ def get_month_cpu_usage():
     hosts = {host["hostid"]: host["name"] for host in data_hosts.get("result", [])}
 
     now = datetime.now()
-    today_midnight = now.replace(hour=0, minute=0, second=0)  # Start of today
+    today_midnight = now.replace(hour=0, minute=0, second=0)
 
-    # สร้าง time slots จาก 00:00 ถึงตอนนี้ (เป็น datetime objects)
+    # Generate time slots from 00:00 to now (hourly)
     time_slots_cpu = [today_midnight + timedelta(hours=i) for i in range(now.hour + 1)]
-    time_slots_str = [ts.strftime("%H:%M") for ts in time_slots_cpu]  # ฟอร์แมตเป็น string ช่วงเวลา
+    time_slots_str = [ts.strftime("%H:%M") for ts in time_slots_cpu]  # Format time slot labels
 
-    cpu_usage = defaultdict(lambda: [0] * len(time_slots_str))  # กำหนดค่าเริ่มต้นทั้งหมดเป็น 0
+    cpu_usage = defaultdict(lambda: [0] * len(time_slots_str))  # Default all slots to 0
 
     for host_id, host_name in hosts.items():
         item_id = get_cpu_itemid(host_id)
@@ -421,12 +414,12 @@ def get_cpu_itemid(host_id):
 
     return None
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
     #problem_data = get_problem_graph()  # Fetch problem history for today
     #print(problem_data)  # Print final structured data
     #print(get_today_zabbix_problem())
-    #print(count_today_problems())
-    #print(get_today_server_problem())
+    # print(count_today_problems())
+    print(get_month_server_problem())
     #print(count_today_server_problems())
     #print(get_today_cpu_usage())
     #print(get_all_cpu_items(10084))

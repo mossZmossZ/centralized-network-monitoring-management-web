@@ -1,7 +1,7 @@
 import os
-import json
 import pandas as pd
 import matplotlib.pyplot as plt
+import json
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -14,28 +14,30 @@ from reportlab.platypus import (
 from datetime import datetime, timedelta
 from reportlab.lib import colors
 # Import your existing function
-from .weekly_zabbix import get_week_zabbix_problem,get_problem_graph,get_week_server_problem,get_week_cpu_usage
-from .weekly_zabbix import count_today_problems,count_today_server_problems
-from .weekly_uptimekuma import get_down_count_week,get_graph_down_week,get_monitor_down_week
-from .weekly_suricata import get_graph_threats,get_threat_summary
 
-zabbix_network_issues = get_week_zabbix_problem()
+from dailyReport.dailyzabbix import get_today_zabbix_problem, get_problem_graph,get_today_server_problem,get_today_cpu_usage
+from dailyReport.daily_uptimekuma import get_down_count_day,get_graph_down_day,get_monitor_down_day
+from dailyReport.dailyzabbix import count_today_problems,count_today_server_problems
+from dailyReport.daily_suricata import get_graph_threats,get_threat_summary
+# Get today's network issues from Zabbix
+zabbix_network_issues = get_today_zabbix_problem()
 zabbix_problem_history = get_problem_graph()
-zabbix_os_issues = get_week_server_problem()
-zabbix_cpu_uses = get_week_cpu_usage()
+zabbix_os_issues = get_today_server_problem()
+zabbix_cpu_uses = get_today_cpu_usage()
 zabbix_count_problem = count_today_problems()
 zabbix_count_server = count_today_server_problems()
 
-uptime_web_issue = json.loads(get_monitor_down_week())
-uptime_web_downtime = json.loads(get_graph_down_week())
-uptime_count_day = json.loads(get_down_count_week())
+uptime_web_issue = json.loads(get_monitor_down_day())
+uptime_web_downtime = json.loads(get_graph_down_day())
+uptime_count_day = json.loads(get_down_count_day())
 
 suricata_threat = get_threat_summary()
 suricata_graph = get_graph_threats()
 
+
 def generate_report_timestamp():
     now = datetime.now()
-    start_time = now - timedelta(days=7)
+    start_time = now - timedelta(days=1)
     
     report_date = now.strftime("%Y-%m-%d")
     data_range = f"{start_time.strftime('%Y-%m-%d %H:%M')} -- {now.strftime('%Y-%m-%d %H:%M')} GMT+7"
@@ -44,6 +46,7 @@ def generate_report_timestamp():
         "report_date": report_date,
         "data_range": data_range
     }
+
 
 timestamps = generate_report_timestamp()
 api_response = {
@@ -74,7 +77,7 @@ api_response = {
 ###############################################################################
 # 1) Header & Footer Function
 ###############################################################################
-from reportlab.lib import colors
+
 
 def header_footer(canvas, doc):
     page_width, page_height = A4
@@ -83,14 +86,14 @@ def header_footer(canvas, doc):
     # ---------------- HEADER ----------------
     canvas.setFont("Helvetica-Bold", 12)
     # Left-aligned: Report title
-    canvas.drawString(doc.leftMargin, page_height - 50, "Centralized Monitoring Weekly Report")
+    canvas.drawString(doc.leftMargin, page_height - 50, "Centralized Monitoring Daily Report")
     # Right-aligned: Page number
     page_number = f"Page {doc.page}"
     canvas.drawRightString(page_width - doc.rightMargin, page_height - 50, page_number)
 
     # ---------------- FOOTER ----------------
     canvas.setFont("Helvetica", 10)
-    canvas.drawString(doc.leftMargin, footer_y, "Centralized Monitoring Weekly Report")
+    canvas.drawString(doc.leftMargin, footer_y, "Centralized Monitoring Daily Report")
     canvas.setFont("Helvetica-Bold", 10)
     canvas.setFillColor(colors.red)
     canvas.drawCentredString(page_width / 2, footer_y, "Confidential for internal use")
@@ -135,7 +138,7 @@ def generate_chart(data, chart_type, filename, colors_list=None,
 ###############################################################################
 # 3) Main Report-Building Function
 ###############################################################################
-def build_report_weekly(filename):
+def build_report_daily(filename):
     chart_files = []
     ###########################################################################
     # A) Create the Document (BaseDocTemplate) and PageTemplate
@@ -160,7 +163,7 @@ def build_report_weekly(filename):
     # B) TITLE PAGE-LIKE CONTENT
     ###########################################################################
     # TITLE PAGE - Dynamically Insert Report Date & Data Range
-    story.append(Paragraph("Centralized Monitoring Weekly Report", styles["Title"]))
+    story.append(Paragraph("Centralized Monitoring Daily Report", styles["Title"]))
     story.append(Spacer(1, 0.2*inch))
 
     # Fetch report date and data range from API response
@@ -207,7 +210,7 @@ def build_report_weekly(filename):
     api_problem_history = api_response.get("problem_history", {})
 
     # Define expected time slots for a 24-hour period (every 4 hours)
-    time_slots = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
     # Ensure all problem types have complete time slots (fill missing slots with 0s)
     formatted_problem_history = {}
@@ -228,11 +231,11 @@ def build_report_weekly(filename):
         plt.plot(problem_data.index, problem_data[col], marker="o", label=col, color=color, linewidth=2)
 
     # Format Y-axis as integers (ensuring whole numbers only)
-    plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-
+    plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True, min_n_ticks=1))
+    plt.gca().set_ylim(bottom=0)  # Ensure Y-axis starts at zero
     # Set labels and title
     plt.title("Problem History", fontsize=14, fontweight='bold')
-    plt.xlabel("Days")
+    plt.xlabel("Time")
     plt.ylabel("Count")
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.6)
@@ -289,17 +292,17 @@ def build_report_weekly(filename):
     api_cpu_usage = api_response.get("cpu_usage", {})
 
     # Define expected time slots for a 24-hour period (every 6 hours)
-    time_slots_cpu = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots_cpu_usage = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
     # Ensure all hosts have complete time slots (fill missing slots with 0s)
     formatted_cpu_usage = {}
     for host, values in api_cpu_usage.items():
-        while len(values) < len(time_slots_cpu):  # Ensure each host has 6 values
+        while len(values) < len(time_slots_cpu_usage):  # Ensure each host has 6 values
             values.append(0)
-        formatted_cpu_usage[host] = values[:len(time_slots_cpu)]  # Keep only 6 values
+        formatted_cpu_usage[host] = values[:len(time_slots_cpu_usage)]  # Keep only 6 values
 
     # Create DataFrame with correct structure
-    cpu_data_df = pd.DataFrame(formatted_cpu_usage, index=time_slots_cpu)
+    cpu_data_df = pd.DataFrame(formatted_cpu_usage, index=time_slots_cpu_usage)
 
     # Define chart filename
     cpu_chart = "cpu_load.png"
@@ -308,7 +311,7 @@ def build_report_weekly(filename):
     plt.figure(figsize=(7, 4), dpi=150)
     for col, color in zip(cpu_data_df.columns, ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]):
         plt.plot(cpu_data_df.index, cpu_data_df[col], marker="o", label=col, color=color, linewidth=2)
-
+    
     plt.ylim(0, 80)  # Limit scale between 0% and 80%
     # Format Y-axis as percentage (0% - 100%)
     plt.gca().yaxis.set_major_locator(mticker.MultipleLocator(10))  # Steps of 10%
@@ -316,7 +319,7 @@ def build_report_weekly(filename):
 
     # Set labels and title
     plt.title("CPU Load Over Time", fontsize=14, fontweight='bold')
-    plt.xlabel("Days")
+    plt.xlabel("Time")
     plt.ylabel("CPU Usage (%)")
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.6)
@@ -372,16 +375,16 @@ def build_report_weekly(filename):
     api_web_downtime = api_response.get("web_downtime", {})
 
     # Define expected time slots for a 24-hour report (6-hour intervals)
-    time_slots_web = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots_web_downtime = ["00:00 - 06:00", "06:00 - 12:00", "12:00 - 18:00", "18:00 - 00:00"]
 
     # Collect all unique web applications from API data
     all_apps = set(api_web_downtime.keys())
 
     # Ensure all expected apps are included (fill missing apps with zeros)
-    formatted_web_downtime = {app: api_web_downtime.get(app, [0] * len(time_slots_web)) for app in all_apps}
+    formatted_web_downtime = {app: api_web_downtime.get(app, [0] * len(time_slots_web_downtime)) for app in all_apps}
 
     # Create DataFrame with correct structure
-    web_downtime_data = pd.DataFrame(formatted_web_downtime, index=time_slots_web)
+    web_downtime_data = pd.DataFrame(formatted_web_downtime, index=time_slots_web_downtime)
 
     # Define chart filename
     web_downtime_chart = "web_downtime.png"
@@ -510,17 +513,17 @@ def build_report_weekly(filename):
     api_threats_history = api_response.get("threats_history", {})
 
     # Define expected time slots for a 24-hour period (every 4 hours)
-    time_slots_threats = ["SUN", "MON", "TUE", "WED", "THU", "FRI","SAT"]
+    time_slots_threats_history = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
 
     # Ensure all threats have complete time slots (fill missing slots with 0s)
     formatted_threats_history = {}
     for threat, values in api_threats_history.items():
-        while len(values) < len(time_slots_threats):  # Ensure each threat has 6 values
+        while len(values) < len( time_slots_threats_history):  # Ensure each threat has 6 values
             values.append(0)
-        formatted_threats_history[threat] = values[:len(time_slots_threats)]  # Keep only 6 values
+        formatted_threats_history[threat] = values[:len(time_slots_threats_history)]  # Keep only 6 values
 
     # Create DataFrame with correct structure
-    threats_history_df = pd.DataFrame(formatted_threats_history, index=time_slots_threats)
+    threats_history_df = pd.DataFrame(formatted_threats_history, index=time_slots_threats_history)
 
     # Define chart filename
     threats_chart = "threats_history.png"
@@ -535,7 +538,7 @@ def build_report_weekly(filename):
 
     # Set labels and title
     plt.title("Threats History", fontsize=14, fontweight='bold')
-    plt.xlabel("Days")
+    plt.xlabel("Last HIT")
     plt.ylabel("Count")
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.6)
@@ -551,7 +554,6 @@ def build_report_weekly(filename):
 
 
     doc.build(story) #Build the PDF
-
     #Remove Temp File
     for chart_file in chart_files:
         if os.path.exists(chart_file):

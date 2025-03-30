@@ -89,11 +89,19 @@ def get_threat_summary():
     threat_data = {}
 
     for timestamp, signature, sig_id in alerts:
+        # ✅ Extract a short signature (if matching any known threats)
         short_signature = extract_short_signature(signature)
-        key = (short_signature, sig_id)
 
+        # ✅ Truncate signature to 30 characters with "..."
+        if len(signature) > 30:
+            signature = signature[:30] + "..."
+
+        key = (signature, sig_id)
+
+        # ✅ Convert timestamp to readable format
         converted_time = parser.isoparse(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
+        # ✅ Aggregate threat data
         if key in threat_data:
             threat_data[key]["count"] += 1
             if timestamp > threat_data[key]["last_hit"]:
@@ -101,14 +109,21 @@ def get_threat_summary():
         else:
             threat_data[key] = {"count": 1, "last_hit": converted_time}
 
+    # ✅ Sort threats by frequency
     sorted_threats = sorted(threat_data.items(), key=lambda x: x[1]["count"], reverse=True)
-    
+
+    # ✅ Prepare the top 10 threats with truncated names
     top_10_threats = [
-        [data["last_hit"], short_signature, str(data["count"])]
-        for (short_signature, _), data in sorted_threats[:10]
+        [
+            data["last_hit"],  # Timestamp of the last detected alert
+            signature,         # Truncated signature to 30 characters
+            str(data["count"])  # Total count of occurrences
+        ]
+        for (signature, _), data in sorted_threats[:10]
     ]
 
     return {"threats_detected": top_10_threats}
+
 
 def get_graph_threats():
     alerts = fetch_suricata_alerts()
@@ -134,4 +149,4 @@ def get_graph_threats():
 
 if __name__ == "__main__":
     print(get_threat_summary())
-    print(get_graph_threats())
+    #print(get_graph_threats())

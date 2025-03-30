@@ -67,15 +67,24 @@ def extract_short_signature(signature):
     return signature.split()[0]  # Default: use the first word if no match
 
 def get_threat_summary():
-    alerts = fetch_suricata_alerts()  # Assuming this returns a list of [timestamp, signature, sig_id]
+    alerts = fetch_suricata_alerts()  # Fetch Suricata alerts for the last 7 days
     threat_data = {}
 
     for timestamp, signature, sig_id, severity in alerts:
-        short_signature = extract_short_signature(signature)  # Use extracted signature category
-        key = (short_signature, sig_id, severity)
+        # ✅ Extract and categorize the signature
+        short_signature = extract_short_signature(signature)
 
+        # ✅ Truncate signature to 30 characters with "..." if necessary
+        if len(signature) > 30:
+            signature = signature[:30] + "..."
+
+        # ✅ Use a combination of short signature, sig_id, and severity as key
+        key = (signature, sig_id, severity)
+
+        # ✅ Convert timestamp to readable format
         converted_time = parser.isoparse(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
+        # ✅ Aggregate threat data
         if key in threat_data:
             threat_data[key]["count"] += 1
             if timestamp > threat_data[key]["last_hit"]:
@@ -83,14 +92,21 @@ def get_threat_summary():
         else:
             threat_data[key] = {"count": 1, "last_hit": converted_time}
 
+    # ✅ Sort threats by count (descending order)
     sorted_threats = sorted(threat_data.items(), key=lambda x: x[1]["count"], reverse=True)
-    
+
+    # ✅ Format the top 10 threats with truncated names
     top_10_threats = [
-        [data["last_hit"], short_signature, str(data["count"])]
-        for (short_signature, sig_id, severity), data in sorted_threats[:10]
+        [
+            data["last_hit"],   # Date and time of last occurrence
+            signature,          # Truncated signature (30 chars max)
+            str(data["count"])  # Count of occurrences
+        ]
+        for (signature, _, _), data in sorted_threats[:10]
     ]
 
     return {"threats_detected": top_10_threats}
+
 
 def get_graph_threats():
     alerts = fetch_suricata_alerts()  # Expected to return a list of [timestamp, signature, sig_id]

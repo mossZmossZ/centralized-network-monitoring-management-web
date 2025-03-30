@@ -4,9 +4,9 @@ from pydantic import BaseModel
 import datetime
 import os
 
-from monthlyReport.monthly_report_generate import build_monthy_report
-from weeklyReport.weekly_report_generate import build_report_weekly
-from dailyReport.daily_report_generate import build_report_daily
+from monthly_report_generate import build_monthy_report
+from weekly_report_generate import build_report_weekly
+from daily_report_generate import build_report_daily
 # Define the request model for the POST API
 class DateRequest(BaseModel):
     date: str  # The date in the format YYYY-MM-DD

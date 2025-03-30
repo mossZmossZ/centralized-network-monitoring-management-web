@@ -124,26 +124,32 @@ def get_monitor_down_week():
 
 
 def get_graph_down_week():
+    """Fetch and classify 'Down' monitors by weekday for the last 7 days."""
     query = {
         "query": {
             "bool": {
                 "must": [
-                    {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},  # Today from 00:00 to now
+                    {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},  # Last 7 days
                     {"match_phrase": {"message": "Down"}}
                 ]
             }
-        }
+        },
+        "size": 1000,  # Increase size if needed
+        "sort": [
+            {"@timestamp": {"order": "desc"}}
+        ]
     }
 
     auth = (USER, PASSWORD) if USER and PASSWORD else None
 
     try:
-        response = requests.get(
+        # ✅ Change to POST request
+        response = requests.post(
             f"{BASE_URL}/{INDEX_NAME}/_search",
             headers={"Content-Type": "application/json"},
             auth=auth,
             data=json.dumps(query),
-            verify=False  # Ignore SSL verification issues if necessary
+            verify=False  # Ignore SSL verification if necessary
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
@@ -152,23 +158,38 @@ def get_graph_down_week():
     data = response.json()
     hits = data.get("hits", {}).get("hits", [])
 
-    # Initialize web_downtime with zero counts for all time slots
+    # ✅ Initialize web_downtime with zero counts for all days of the week
     web_downtime = {monitor: [0] * 7 for monitor in ALLOWED_MONITORS}
 
     for hit in hits:
         source = hit["_source"]
-        timestamp = source.get("@timestamp", "")
         monitor_name = source.get("monitor_name", "Unknown")
 
+        # Skip if monitor is not in the allowed list
         if monitor_name not in ALLOWED_MONITORS:
             continue
 
-        dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+        timestamp = source.get("@timestamp", "")
+        
+        # ✅ Handle possible different timestamp formats
+        try:
+            dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            try:
+                dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                print(f"Skipping invalid timestamp: {timestamp}")
+                continue
+
+        # ✅ Get the day index (0 = Monday, 6 = Sunday)
         day_index = dt.weekday()
 
+        # ✅ Increment count for the respective day
         web_downtime[monitor_name][day_index] += 1
 
+    # 🎯 Return results as JSON
     return json.dumps({"web_downtime": web_downtime}, indent=4)
+
 
 def get_down_count_week():
     monitor_down_data = json.loads(get_monitor_down_week())
@@ -176,6 +197,6 @@ def get_down_count_week():
     return json.dumps({"Web Application": down_count}, indent=4)
 
 if __name__ == "__main__":
-    #print(get_monitor_down_week())
+    print(get_monitor_down_week())
     print(get_graph_down_week())
-#     #print(get_down_count_week())
+    #print(get_down_count_week())

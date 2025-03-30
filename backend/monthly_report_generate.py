@@ -14,10 +14,10 @@ from reportlab.platypus import (
 from datetime import datetime, timedelta
 from reportlab.lib import colors
 # Import your existing function
-from .monthly_zabbix import get_month_zabbix_problem,get_problem_graph,get_month_server_problem,get_month_cpu_usage
-from .monthly_zabbix import count_today_problems,count_today_server_problems
-from .monthly_uptimekuma import get_down_count_month,get_graph_down_month,get_monitor_down_month
-from .monthly_suricata import get_graph_threats,get_threat_summary
+from monthlyReport.monthly_zabbix import get_month_zabbix_problem,get_problem_graph,get_month_server_problem,get_month_cpu_usage
+from monthlyReport.monthly_zabbix import count_today_problems,count_today_server_problems
+from monthlyReport.monthly_uptimekuma import get_down_count_month,get_graph_down_month,get_monitor_down_month
+from monthlyReport.monthly_suricata import get_graph_threats,get_threat_summary
 
 zabbix_network_issues = get_month_zabbix_problem()
 zabbix_problem_history = get_problem_graph()
